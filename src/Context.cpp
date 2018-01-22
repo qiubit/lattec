@@ -23,3 +23,19 @@ llvm::IRBuilder<>* Context::getBuilder() {
 llvm::Module* Context::getModule() {
     return this->llvmModule.get();
 }
+
+llvm::Value *Context::getStringGlobal(const std::string &str) {
+    auto strGlobalType = llvm::ArrayType::get(llvm::IntegerType::get(*this->llvmCtx, 8), str.length() + 1);
+    if (stringGlobals.find(str) == stringGlobals.end()) {
+        auto llvmStr = llvm::ConstantDataArray::getString(*this->llvmCtx, str);
+        // TODO: possible memleak
+        llvm::GlobalVariable *strGlobal =
+                new llvm::GlobalVariable(*this->llvmModule, strGlobalType, true, llvm::GlobalValue::InternalLinkage, llvmStr);
+        this->stringGlobals[str] = strGlobal;
+    }
+    return this->llvmBuilder->CreateGEP(
+            strGlobalType,
+            stringGlobals[str],
+            std::vector<llvm::Value *>{llvmBuilder->getInt32(0), llvmBuilder->getInt32(0)}
+    );
+}

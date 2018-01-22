@@ -20,6 +20,15 @@
 #include "registries/TypeRegistry.h"
 #include "scopes/GlobalScope.h"
 #include "visitors/GlobalScopeVisitor.h"
+#include "operations/NewOp.h"
+#include "operations/IntNegOp.h"
+#include "operations/BooleanNotOp.h"
+#include "operations/TypedNullOp.h"
+#include "operations/IntDivOp.h"
+#include "operations/ConstStringOp.h"
+#include "operations/ConstIntOp.h"
+#include "operations/StringAddOp.h"
+#include "operations/IntModOp.h"
 
 int main() {
     TypeRegistry registry;
@@ -148,19 +157,36 @@ int main() {
     }
 
     // class.in test
-    /*
+
     llvm::Function *f = globalScope.getSymbolIdEnvEntry("main")->getEntryFunction();
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(*ctx.getContext(), "entry", f);
     ctx.getBuilder()->SetInsertPoint(BB);
+    /*
     auto ptrAlloca = ctx.getBuilder()->CreateAlloca(registry.getBytePtrType()->getLlvmType(&ctx));
     auto intAlloca = ctx.getBuilder()->CreateAlloca(registry.getIntType()->getLlvmType(&ctx));
     auto ptr = ctx.getBuilder()->CreateLoad(ptrAlloca, "ptr");
     auto testClass = dynamic_cast<ClassType *>(registry.getType("Test"));
     auto ptrCasted = testClass->bitcastToClassPtr(&ctx, ptr);
     auto one = ctx.getBuilder()->getInt32(1);
-    ctx.getBuilder()->CreateStore(one, intAlloca);
+    auto nullPtr = llvm::ConstantPointerNull::get(llvm::PointerType::get(testClass->getClassStructType(&ctx), 0));
+    auto size = ctx.getBuilder()->CreateGEP(testClass->getClassStructType(&ctx), nullPtr, std::vector<llvm::Value *>{one});
+    auto sizeInt = ctx.getBuilder()->CreatePtrToInt(size, registry.getIntType()->getLlvmType(&ctx));
+    auto getSize = ctx.getBuilder()->CreateCall(globalScope.getSymbolIdEnvEntry("malloc")->getEntryFunction(), sizeInt);
      */
-    // auto size = ctx.getBuilder()->CreateGEP(testClass->getClassStructType(&ctx), ptrCasted, std::vector<llvm::Value *>{one});
+    auto testClass = dynamic_cast<ClassType *>(registry.getType("Test"));
+    auto newOp = NewOp(&ctx, testClass);
+    /*
+    auto oneVal = ctx.getBuilder()->getInt1(true);
+    auto testedOp = BooleanNotOp(&ctx, &registry, oneVal);
+     */
+    auto oneVal = ctx.getBuilder()->getInt32(1);
+    auto zeroVal = ctx.getBuilder()->getInt32(0);
+    auto testedOp = IntDivOp(&ctx, &registry, oneVal, zeroVal);
+    auto stringOp = ConstStringOp(&ctx, &registry, "eniu");
+    auto intOp = ConstIntOp(&ctx, &registry, -42);
+    auto modOp = IntModOp(&ctx, &registry, oneVal, oneVal);
+    ctx.getBuilder()->CreateRet(modOp.getOpVal());
+
 
     std::cerr << "OK" << std::endl;
 
