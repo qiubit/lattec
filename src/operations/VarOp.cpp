@@ -3,3 +3,8 @@
 //
 
 #include "VarOp.h"
+
+
+llvm::Value *VarOp::loadVar(Context *ctx, llvm::Value *varAllocd) {
+    return ctx->getBuilder()->CreateLoad(varAllocd);
+}

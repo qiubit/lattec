@@ -12,6 +12,14 @@
 #include "../parser/LatteBaseVisitor.h"
 #include "../scopes/GlobalScope.h"
 
+
+// Fills GlobalScope and attached FunctionScopes
+
+// Checks for:
+// - Inheritance cycles,
+// - Missing declarations,
+// - Duplicate declarations
+
 class GlobalScopeVisitor : public LatteBaseVisitor {
 private:
     GlobalScope *globalScope;

@@ -11,11 +11,16 @@
 #include "GlobalScope.h"
 #include "../IdEnv.h"
 
+
+class GlobalScope;
+
+// TODO: Holds id -> llvm::Value data?
 class FunctionScope {
 private:
     FunctionType *functionType;
     GlobalScope *globalScope;
     IdEnv idEnv;
+
 public:
     FunctionScope(GlobalScope *globalScope, FunctionType *functionType, std::vector<std::string> argNames);
 };

@@ -3,3 +3,8 @@
 //
 
 #include "IntGtOp.h"
+
+
+llvm::Value *IntGtOp::compareInts(Context *ctx, llvm::Value *lInt, llvm::Value *rInt) {
+    return ctx->getBuilder()->CreateICmpSGT(lInt, rInt);
+}

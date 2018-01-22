@@ -9,6 +9,7 @@ ClassType *GlobalScope::referenceClass(const std::string &className) {
     if (registry.getType(className) == nullptr) {
         registry.registerNamedType(className, NamedType::NamedTypeKind::CLASS);
     }
+    classNames.insert(className);
     return dynamic_cast<ClassType *>(registry.getType(className));
 }
 
@@ -127,6 +128,8 @@ std::vector<std::string> GlobalScope::errorChecks() {
     if (!checkForMain())
         errors.emplace_back("Function int main() not defined");
 
+    checkClassHierarchy(errors);
+
     return errors;
 }
 
@@ -159,7 +162,7 @@ void GlobalScope::declareClassFunction(const std::string &className, const std::
     if (classType == nullptr)
         throw std::invalid_argument("\"" + className + "\" is not a class");
     FunctionType *funType = reg->getFunctionType(returnType, argTypes);
-    if (classType->getMemberType(funName) != nullptr)
+    if (classType->getLocalMemberType(funName) != nullptr)
         throw std::invalid_argument("Symbol \"" + funName + "\" already used in class \"" + className + "\"");
     classType->addMember(funName, funType);
 }
@@ -170,7 +173,7 @@ void GlobalScope::defineClassFunction(const std::string &className, const std::s
     ClassType *classType = dynamic_cast<ClassType *>(reg->getType(className));
     if (classType == nullptr)
         throw std::invalid_argument("\"" + className + "\" is not a class");
-    FunctionType *funType = dynamic_cast<FunctionType *>(classType->getMemberType(funName));
+    FunctionType *funType = dynamic_cast<FunctionType *>(classType->getLocalMemberType(funName));
     if (funType == nullptr)
         throw std::invalid_argument("Function \"" + funName + "\" is not declared in class\"" + className + "\"");
     try {
@@ -188,7 +191,7 @@ void GlobalScope::defineClassVariable(const std::string &className, const std::s
     ClassType *classType = dynamic_cast<ClassType *>(reg->getType(className));
     if (classType == nullptr)
         throw std::invalid_argument("\"" + className + "\" is not a class");
-    if (classType->getMemberType(varName) != nullptr)
+    if (classType->getLocalMemberType(varName) != nullptr)
         throw std::invalid_argument("Symbol \"" + varName + "\" already used in class \"" + className + "\"");
     classType->addMember(varName, t);
 }
@@ -200,4 +203,36 @@ bool GlobalScope::checkForMain() {
     FunctionType *expectedType = reg->getFunctionType(reg->getIntType());
     Type *actualType = mainEntry.getEntryType();
     return (*expectedType == *actualType);
+}
+
+void GlobalScope::createFunctionScope(const std::string &funName, const std::vector<std::string> &argNames) {
+    try {
+        if (!env.envEntryExists(funName))
+            throw std::invalid_argument("Symbol \"" + funName + "\" is undefined");
+        IdEnvEntry &funEntry = env.getEnvEntryForId(funName);
+        FunctionType *funType = dynamic_cast<FunctionType *>(funEntry.getEntryType());
+        if (funType == nullptr)
+            throw std::invalid_argument("Symbol \"" + funName + "\" is not a function");
+        FunctionScope *funScope = scopeReg->getNewFunctionScope(this, funType, argNames);
+        this->functionScopes[funName] = funScope;
+    } catch (std::invalid_argument &e) {
+        throw e;
+    }
+}
+
+void GlobalScope::checkClassHierarchy(std::vector<std::string> &errors) {
+    for (const std::string &s : classNames) {
+        ClassType *classType = dynamic_cast<ClassType *>(reg->getType(s));
+        if (classType == nullptr)
+            throw std::runtime_error("Stored name " + s + " should be class type and it's not");
+        try {
+            classType->initializeMemberData();
+        } catch (std::invalid_argument &e) {
+            errors.push_back(e.what());
+        }
+    }
+}
+
+IdEnv *GlobalScope::getIdEnv() {
+    return &this->env;
 }

@@ -6,8 +6,14 @@
 #define LATTE_VAROP_H
 
 
-class VarOp {
+#include "Op.h"
 
+class VarOp : public Op {
+private:
+    static llvm::Value *loadVar(Context *ctx, llvm::Value *varAllocd);
+public:
+    VarOp(Context *ctx, Type *varType, llvm::Value *varAllocd) :
+            Op(varType, loadVar(ctx, varAllocd)) { }
 };
 
 

@@ -19,6 +19,8 @@ private:
     std::map<llvm::LLVMContext *, llvm::FunctionType *> inferredLlvmTypes;
 
     llvm::FunctionType *inferLlvmType(Context *ctx);
+
+    bool thisFlag = false;
 public:
     FunctionType(Type *retType, std::vector<Type *> &argsType);
     FunctionType(Type *retType, std::vector<Type *> &&argsType);
@@ -28,6 +30,9 @@ public:
     llvm::Function *generateFunction(Context *ctx, const std::string &name);
     const Type* getRetType();
     const std::vector<Type *> getArgsType();
+
+    bool isFunctionType() const override;
+    void setThisFlag() { thisFlag = true; }
 };
 
 

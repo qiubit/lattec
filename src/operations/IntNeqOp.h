@@ -6,7 +6,16 @@
 #define LATTE_INTNEQOP_H
 
 
-class IntNeqOp {
+#include "Op.h"
+#include "../registries/TypeRegistry.h"
+
+class IntNeqOp : public Op {
+private:
+    static llvm::Value *compareInts(Context *ctx, llvm::Value *lInt, llvm::Value *rInt);
+
+public:
+    IntNeqOp(Context *ctx, TypeRegistry *reg, llvm::Value *lInt, llvm::Value *rInt)
+            : Op(reg->getIntType(), compareInts(ctx, lInt, rInt)) { }
 
 };
 

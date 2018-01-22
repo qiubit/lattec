@@ -10,10 +10,11 @@
 #include "../registries/TypeRegistry.h"
 #include "../IdEnv.h"
 #include "GlobalScope.h"
+#include "Scope.h"
 
 class GlobalScope;
 
-class ClassScope {
+class ClassScope : public Scope {
 private:
     Context *ctx;
     TypeRegistry *reg;
@@ -26,7 +27,7 @@ public:
                                std::vector<Type *> argTypes);
     void declareMemberFunction(const std::string &symbol, Type *returnType);
 
-    IdEnvEntry *getSymbolIdEnvEntry(const std::string &symbol);
+    IdEnvEntry *getSymbolIdEnvEntry(const std::string &symbol) override;
 };
 
 

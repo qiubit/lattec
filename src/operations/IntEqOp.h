@@ -6,7 +6,16 @@
 #define LATTE_INTEQOP_H
 
 
-class IntEqOp {
+#include "Op.h"
+#include "../registries/TypeRegistry.h"
+
+class IntEqOp : public Op {
+private:
+    static llvm::Value *compareInts(Context *ctx, llvm::Value *lInt, llvm::Value *rInt);
+
+public:
+    IntEqOp(Context *ctx, TypeRegistry *reg, llvm::Value *lInt, llvm::Value *rInt)
+            : Op(reg->getIntType(), compareInts(ctx, lInt, rInt)) { }
 
 };
 

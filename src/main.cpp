@@ -15,7 +15,6 @@
 #include "parser/LatteParser.h"
 #include "parser/LatteErrorListener.h"
 
-#include "ClassMetadata.h"
 #include "Context.h"
 #include "registries/TypeRegistry.h"
 #include "scopes/GlobalScope.h"
@@ -174,7 +173,8 @@ int main() {
     auto getSize = ctx.getBuilder()->CreateCall(globalScope.getSymbolIdEnvEntry("malloc")->getEntryFunction(), sizeInt);
      */
     auto testClass = dynamic_cast<ClassType *>(registry.getType("Test"));
-    auto newOp = NewOp(&ctx, testClass);
+    auto testClass2 = dynamic_cast<ClassType *>(registry.getType("Test2"));
+    auto newOp = NewOp(&ctx, globalScope.getIdEnv(), testClass2);
     /*
     auto oneVal = ctx.getBuilder()->getInt1(true);
     auto testedOp = BooleanNotOp(&ctx, &registry, oneVal);
@@ -185,8 +185,7 @@ int main() {
     auto stringOp = ConstStringOp(&ctx, &registry, "eniu");
     auto intOp = ConstIntOp(&ctx, &registry, -42);
     auto modOp = IntModOp(&ctx, &registry, oneVal, oneVal);
-    ctx.getBuilder()->CreateRet(modOp.getOpVal());
-
+    ctx.getBuilder()->CreateRet(newOp.getOpVal());
 
     std::cerr << "OK" << std::endl;
 

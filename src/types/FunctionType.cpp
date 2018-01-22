@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 #include "FunctionType.h"
-
+#include <iostream>
 
 static void FunctionTypeArgumentCheck(Type *retType, std::vector<Type *> &argsType)
 {
@@ -33,10 +33,22 @@ bool FunctionType::operator==(const Type &rhs) const {
     bool equal;
     try {
         auto &rhsFunType = dynamic_cast<const FunctionType &>(rhs);
-        equal = (rhsFunType.retType == retType && rhsFunType.argsType == argsType);
+        equal = (*rhsFunType.retType == *retType && rhsFunType.argsType.size() == argsType.size());
+        if (equal) {
+            for (size_t i = 0; i < argsType.size(); i++) {
+                if (i == 0 && thisFlag) {
+                    if (!rhsFunType.thisFlag)
+                        equal = false;
+                } else {
+                    equal = (equal && (*argsType[i] == *rhsFunType.argsType[i]));
+                }
+            }
+        }
     } catch (std::bad_cast &e) {
         equal = false;
     }
+    if (!equal)
+        return equal;
     return equal;
 }
 
@@ -79,4 +91,8 @@ const Type *FunctionType::getRetType() {
 
 const std::vector<Type *> FunctionType::getArgsType() {
     return argsType;
+}
+
+bool FunctionType::isFunctionType() const {
+    return true;
 }

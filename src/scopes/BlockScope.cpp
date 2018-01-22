@@ -3,3 +3,11 @@
 //
 
 #include "BlockScope.h"
+
+IdEnvEntry *BlockScope::getSymbolIdEnvEntry(const std::string &symbol) {
+    if (env.envEntryExists(symbol)) {
+        IdEnvEntry &entry = env.getEnvEntryForId(symbol);
+        return &entry;
+    } else
+        return parent->getSymbolIdEnvEntry(symbol);
+}

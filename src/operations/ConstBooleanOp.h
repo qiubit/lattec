@@ -6,8 +6,17 @@
 #define LATTE_CONSTBOOLEANOP_H
 
 
-class ConstBooleanOp {
+#include "../Context.h"
+#include "../registries/TypeRegistry.h"
+#include "Op.h"
 
+class ConstBooleanOp : public Op {
+private:
+    static llvm::Value *generateConstBoolean(Context *ctx, bool val);
+
+public:
+    ConstBooleanOp(Context *ctx, TypeRegistry *reg, int val)
+            : Op(reg->getBooleanType(), generateConstBoolean(ctx, val)) { }
 };
 
 

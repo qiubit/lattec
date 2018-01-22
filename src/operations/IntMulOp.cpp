@@ -3,3 +3,8 @@
 //
 
 #include "IntMulOp.h"
+
+
+llvm::Value *IntMulOp::multiplyInts(Context *ctx, llvm::Value *lInt, llvm::Value *rInt) {
+    return ctx->getBuilder()->CreateMul(lInt, rInt);
+}

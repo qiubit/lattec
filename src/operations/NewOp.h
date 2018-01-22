@@ -11,13 +11,12 @@
 #include "../registries/TypeRegistry.h"
 
 
-// TODO: Virtual functions override
 class NewOp : public Op {
 private:
-    static llvm::Value *createNewObject(Context *ctx, ClassType *classType);
+    static llvm::Value *createNewObject(Context *ctx, IdEnv *functionEnv, ClassType *classType);
 public:
-    NewOp(Context *ctx, ClassType *classType)
-            : Op(classType, createNewObject(ctx, classType)) { }
+    NewOp(Context *ctx, IdEnv *functionEnv, ClassType *classType)
+            : Op(classType, createNewObject(ctx, functionEnv, classType)) { }
 };
 
 

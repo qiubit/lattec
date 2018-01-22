@@ -6,8 +6,16 @@
 #define LATTE_BOOLEANOROP_H
 
 
-class BooleanOrOp {
+#include "Op.h"
+#include "../registries/TypeRegistry.h"
 
+class BooleanOrOp : Op {
+private:
+    static llvm::Value *compareBooleans(Context *ctx, llvm::Value *lBool, llvm::Value *rBool);
+
+public:
+    BooleanOrOp(Context *ctx, TypeRegistry *reg, llvm::Value *lBool, llvm::Value *rBool)
+            : Op(reg->getBooleanType(), compareBooleans(ctx, lBool, rBool)) { }
 };
 
 

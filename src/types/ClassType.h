@@ -11,30 +11,52 @@
 #include <unordered_map>
 
 #include "NamedType.h"
+#include "../IdEnv.h"
+
+class IdEnv;
 
 class ClassType : public NamedType {
 private:
     ClassType *parentClass = nullptr;
-    std::vector<Type *> classMembers;
-    std::unordered_map<std::string, size_t> nameToMemberIdx;
+    std::vector<Type *> localClassMembers;
+    std::unordered_map<std::string, size_t> localNameToMemberIdx;
+
     bool defined = false;
+
+    /* member data, initialized after entire class hierarchy is fixed */
+    bool memberDataInitialized = false;
+
+    int size = 0;
+    std::unordered_map<std::string, int> memberOffsets;
+    std::unordered_map<std::string, Type *> memberTypes;
+    std::unordered_map<std::string, std::vector<int>> allMemberOffsets;
+    /* end of member data */
+
 public:
     explicit ClassType(const std::string &classId) : NamedType(classId, NamedTypeKind::CLASS) { };
     ~ClassType() override = default;
 
     void addMember(const std::string &memberName, Type *member);
-    Type *getMemberType(const std::string &memberName);
+    // Ignores class hierarchy
+    Type *getLocalMemberType(const std::string &memberName);
     void setParentClass(ClassType *parent) { parentClass = parent; }
     ClassType *getParentClass() { return parentClass; }
-    llvm::PointerType *getLlvmType(Context *ctx) override;
-    llvm::StructType *getClassStructType(Context *ctx);
     std::vector<Type *> getClassMembers();
     void defineClass() { defined = true; }
     bool isDefined() const { return defined; }
     bool isTypeComplete() const override { return isDefined(); }
+    llvm::Value *allocateClass(Context *ctx);
 
-    // Needed for accessing class members
+    // These functions should be called only after hierarchy is final
+    int getMemberOffset(const std::string &memberName);
+    Type *getMemberType(const std::string &memberName);
+
+    llvm::PointerType *getLlvmType(Context *ctx) override;
+    llvm::StructType *getClassStructType(Context *ctx);
     llvm::Value *bitcastToClassPtr(Context *ctx, llvm::Value *bytePtr);
+    void overwriteVirtualFunctions(Context *ctx, IdEnv *functionEnv, llvm::Value *classBytePtr);
+
+    void initializeMemberData();
 };
 
 

@@ -27,6 +27,7 @@ void ClassScope::declareMemberFunction(const std::string &symbol, Type *returnTy
 IdEnvEntry *ClassScope::getSymbolIdEnvEntry(const std::string &symbol) {
     if (env.envEntryExists(symbol))
         return &env.getEnvEntryForId(symbol);
-    return nullptr;
+    else
+        return globalScope->getSymbolIdEnvEntry(symbol);
 }
 

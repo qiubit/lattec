@@ -12,9 +12,8 @@ class Op {
 private:
     Type *opType;
     llvm::Value *opVal;
-protected:
-    Op(Type *opType, llvm::Value *opVal) : opType(opType), opVal(opVal) { }
 public:
+    Op(Type *opType, llvm::Value *opVal) : opType(opType), opVal(opVal) { }
     Type *getOpType() { return opType; }
     llvm::Value *getOpVal() { return opVal; }
 };

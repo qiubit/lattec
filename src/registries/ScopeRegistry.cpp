@@ -9,3 +9,9 @@ ClassScope *ScopeRegistry::getNewClassScope(Context *ctx, TypeRegistry *reg, Glo
     classScopes.push_back(std::make_unique<ClassScope>(ctx, reg, globalScope));
     return classScopes.back().get();
 }
+
+FunctionScope *ScopeRegistry::getNewFunctionScope(GlobalScope *globalScope, FunctionType *functionType,
+                                                  std::vector<std::string> argNames) {
+    functionScopes.push_back(std::make_unique<FunctionScope>(globalScope, functionType, argNames));
+    return functionScopes.back().get();
+}

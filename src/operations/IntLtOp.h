@@ -6,7 +6,16 @@
 #define LATTE_INTLTOP_H
 
 
-class IntLtOp {
+#include "Op.h"
+#include "../registries/TypeRegistry.h"
+
+class IntLtOp : public Op {
+private:
+    static llvm::Value *compareInts(Context *ctx, llvm::Value *lInt, llvm::Value *rInt);
+
+public:
+    IntLtOp(Context *ctx, TypeRegistry *reg, llvm::Value *lInt, llvm::Value *rInt)
+            : Op(reg->getIntType(), compareInts(ctx, lInt, rInt)) { }
 
 };
 

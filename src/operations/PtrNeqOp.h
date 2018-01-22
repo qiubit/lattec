@@ -7,9 +7,15 @@
 
 
 #include "Op.h"
+#include "../registries/TypeRegistry.h"
 
-class PtrNeqOp {
+class PtrNeqOp : Op {
+private:
+    static llvm::Value *comparePointers(Context *ctx, llvm::Value *lPtr, llvm::Value *rPtr);
 
+public:
+    PtrNeqOp(Context *ctx, TypeRegistry *reg, llvm::Value *lPtr, llvm::Value *rPtr)
+            : Op(reg->getBooleanType(), comparePointers(ctx, lPtr, rPtr)) { }
 };
 
 

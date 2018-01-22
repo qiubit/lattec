@@ -6,8 +6,17 @@
 #define LATTE_INTADDOP_H
 
 
-class IntAddOp {
+#include "../Context.h"
+#include "Op.h"
+#include "../registries/TypeRegistry.h"
 
+class IntAddOp : public Op {
+private:
+    static llvm::Value *addInts(Context *ctx, llvm::Value *lInt, llvm::Value *rInt);
+
+public:
+    IntAddOp(Context *ctx, TypeRegistry *reg, llvm::Value *lInt, llvm::Value *rInt)
+            : Op(reg->getIntType(), addInts(ctx, lInt, rInt)) { }
 };
 
 

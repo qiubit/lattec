@@ -6,8 +6,16 @@
 #define LATTE_PTREQOP_H
 
 
-class PtrEqOp {
-    // TODO: Implement
+#include "Op.h"
+#include "../registries/TypeRegistry.h"
+
+class PtrEqOp : public Op {
+private:
+    static llvm::Value *comparePointers(Context *ctx, llvm::Value *lPtr, llvm::Value *rPtr);
+
+public:
+    PtrEqOp(Context *ctx, TypeRegistry *reg, llvm::Value *lPtr, llvm::Value *rPtr)
+            : Op(reg->getBooleanType(), comparePointers(ctx, lPtr, rPtr)) { }
 };
 
 

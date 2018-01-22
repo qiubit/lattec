@@ -26,8 +26,9 @@ antlrcpp::Any GlobalScopeVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx)
     Type *returnType = getTypeFromRegistry(ctx, retTypeStr, reg);
 
     std::vector<Type *> argsType;
+    // If this is a class member function, class instance will be supplied as first argument
     if (classVisited != "") {
-        argsType.emplace_back(reg->getBytePtrType());
+        argsType.emplace_back(reg->getType(classVisited));
     }
     if (ctx->arg()) {
         for (auto argTypeCtx : ctx->arg()->type_()) {
@@ -41,12 +42,22 @@ antlrcpp::Any GlobalScopeVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx)
     }
 
     try {
+        std::vector<std::string> argNames;
+        if (classVisited != "")
+            argNames.push_back("this");
+        if (ctx->arg() != nullptr) {
+            for (auto argIdCtx : ctx->arg()->ID()) {
+                argNames.push_back(argIdCtx->getText());
+            }
+        }
         if (classVisited == "") {
             globalScope->declareFunction(funName, returnType, argsType);
             globalScope->defineFunction(funName);
+            globalScope->createFunctionScope(funName, argNames);
         } else {
             globalScope->declareClassFunction(classVisited, funName, returnType, argsType);
             globalScope->defineClassFunction(classVisited, funName);
+            globalScope->createFunctionScope(classVisited + "." + funName, argNames);
         }
     } catch (std::invalid_argument &e) {
         reportError(ctx, e.what());

@@ -3,3 +3,8 @@
 //
 
 #include "ConstBooleanOp.h"
+
+
+llvm::Value *ConstBooleanOp::generateConstBoolean(Context *ctx, bool val) {
+    return ctx->getBuilder()->getInt1(val);
+}

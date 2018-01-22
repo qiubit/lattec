@@ -4,6 +4,8 @@
 
 #include "NewOp.h"
 
-llvm::Value *NewOp::createNewObject(Context *ctx, ClassType *classType) {
-    return classType->allocateClass(ctx);
+llvm::Value *NewOp::createNewObject(Context *ctx, IdEnv *functionEnv, ClassType *classType) {
+    auto classPtr = classType->allocateClass(ctx);
+    classType->overwriteVirtualFunctions(ctx, functionEnv, classPtr);
+    return classPtr;
 }
