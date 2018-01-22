@@ -3,6 +3,7 @@
 //
 
 #include "ClassType.h"
+#include "FunctionType.h"
 
 
 void ClassType::addMember(const std::string &memberName, Type *member) {
@@ -37,7 +38,11 @@ llvm::StructType *ClassType::getClassStructType(Context *ctx) {
 
     std::vector<llvm::Type *> classMembersType;
     for (Type *t : allMemberTypes) {
-        classMembersType.push_back(t->getLlvmType(ctx));
+        FunctionType *ft = dynamic_cast<FunctionType *>(t);
+        if (ft != nullptr)
+            classMembersType.push_back(llvm::PointerType::get(ft->getLlvmType(ctx), 0));
+        else
+            classMembersType.push_back(t->getLlvmType(ctx));
     }
 
     return llvm::StructType::get(*ctx->getContext(), classMembersType);
