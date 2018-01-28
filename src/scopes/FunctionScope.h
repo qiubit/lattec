@@ -7,22 +7,40 @@
 
 #include <unordered_set>
 #include <stdexcept>
+#include <string>
 
+#include "Scope.h"
 #include "GlobalScope.h"
 #include "../IdEnv.h"
 
 
 class GlobalScope;
+class ClassScope;
 
 // TODO: Holds id -> llvm::Value data?
-class FunctionScope {
+class FunctionScope : public Scope {
 private:
+    Context *ctx;
     FunctionType *functionType;
     GlobalScope *globalScope;
+    ClassScope *parent = nullptr;
     IdEnv idEnv;
 
+    std::string functionName;
+    std::vector<std::string> functionArgNames;
+    llvm::Function *functionLlvm;
+
 public:
-    FunctionScope(GlobalScope *globalScope, FunctionType *functionType, std::vector<std::string> argNames);
+    FunctionScope(Context *ctx,
+                  GlobalScope *globalScope,
+                  FunctionType *functionType,
+                  std::string funName,
+                  std::vector<std::string> argNames);
+    IdEnvEntry *getSymbolIdEnvEntry(const std::string &symbol) override;
+    void defineFunctionParameterVars();
+    void setParent(ClassScope *classScope);
+    FunctionType *getFunctionType() { return functionType; }
+    void declareVariable(const std::string &symbol, Type *t) override;
 };
 
 

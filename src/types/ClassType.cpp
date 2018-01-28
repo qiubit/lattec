@@ -150,7 +150,10 @@ void ClassType::overwriteVirtualFunctions(Context *ctx, IdEnv *functionEnv, llvm
                         auto functionPtr = ctx->getBuilder()->CreateGEP(
                                 classStructType,
                                 classPtr,
-                                std::vector<llvm::Value *>{ctx->getBuilder()->getInt32(0), ctx->getBuilder()->getInt32(offset)}
+                                std::vector<llvm::Value *>{
+                                        ctx->getBuilder()->getInt32(0),
+                                        ctx->getBuilder()->getInt32(offset)
+                                }
                         );
                         ctx->getBuilder()->CreateStore(myFunction, functionPtr);
                     }
@@ -158,4 +161,19 @@ void ClassType::overwriteVirtualFunctions(Context *ctx, IdEnv *functionEnv, llvm
             }
         }
     }
+}
+
+llvm::Value *ClassType::getMemberVariablePtr(Context *ctx, const std::string &symbol, llvm::Value *bytePtr) {
+    if (memberOffsets.find(symbol) != memberOffsets.end()) {
+        llvm::Value *classPtr = bitcastToClassPtr(ctx, bytePtr);
+        return ctx->getBuilder()->CreateGEP(
+                getClassStructType(ctx),
+                classPtr,
+                std::vector<llvm::Value *>{
+                        ctx->getBuilder()->getInt32(0),
+                        ctx->getBuilder()->getInt32(memberOffsets[symbol])
+                }
+        );
+    }
+    return nullptr;
 }

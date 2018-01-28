@@ -54,6 +54,7 @@ public:
     llvm::PointerType *getLlvmType(Context *ctx) override;
     llvm::StructType *getClassStructType(Context *ctx);
     llvm::Value *bitcastToClassPtr(Context *ctx, llvm::Value *bytePtr);
+    llvm::Value *getMemberVariablePtr(Context *ctx, const std::string &symbol, llvm::Value *bytePtr);
     void overwriteVirtualFunctions(Context *ctx, IdEnv *functionEnv, llvm::Value *classBytePtr);
 
     void initializeMemberData();

@@ -18,16 +18,21 @@ class ClassScope : public Scope {
 private:
     Context *ctx;
     TypeRegistry *reg;
-    IdEnv env;
     GlobalScope *globalScope;
-public:
-    ClassScope(Context *ctx, TypeRegistry *reg, GlobalScope *globalScope) : ctx(ctx), reg(reg), globalScope(globalScope) { }
-    void declareMemberVariable(const std::string &symbol, Type *t);
-    void declareMemberFunction(const std::string &symbol, Type *returnType,
-                               std::vector<Type *> argTypes);
-    void declareMemberFunction(const std::string &symbol, Type *returnType);
+    ClassType *classType;
+    std::string className;
+    llvm::Value *classPtr = nullptr;
 
+    IdEnv env;
+
+public:
+    ClassScope(Context *ctx, TypeRegistry *reg, GlobalScope *globalScope, ClassType *classType)
+            : ctx(ctx), reg(reg), globalScope(globalScope), classType(classType), className(classType->getTypeId()) { }
     IdEnvEntry *getSymbolIdEnvEntry(const std::string &symbol) override;
+    // Should be called before defining any class variable
+    void bindClassInstanceBytePtr(llvm::Value *classPtr);
+    void defineClassMemberVariable(const std::string &symbol);
+    void declareVariable(const std::string &symbol, Type *t) override;
 };
 
 

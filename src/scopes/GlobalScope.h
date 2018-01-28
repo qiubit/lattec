@@ -36,8 +36,6 @@ private:
     ScopeRegistry *scopeReg;
     IdEnv env;
 
-    // Class scopes get created after calling defineClass()
-    std::unordered_map<std::string, ClassScope *> classScopes;
     std::unordered_map<std::string, FunctionScope *> functionScopes;
     std::unordered_set<std::string> classNames;
 
@@ -45,6 +43,7 @@ private:
     bool checkForInheritanceCycles();
     bool checkForMain();
     void checkClassHierarchy(std::vector<std::string> &errors);
+
 public:
     explicit GlobalScope(Context *ctx, TypeRegistry *reg, ScopeRegistry *scopeReg) : ctx(ctx), reg(reg), scopeReg(scopeReg) { }
 
@@ -61,12 +60,15 @@ public:
     void defineClassFunction(const std::string &className, const std::string &funName);
     void defineClassVariable(const std::string &className, const std::string &varName, Type *t);
     void createFunctionScope(const std::string &funName, const std::vector<std::string> &argNames);
+    FunctionScope *getFunctionScope(const std::string &funName);
+
+    void declareVariable(const std::string &symbol, Type *t) override;
 
     bool isSymbolDeclared(const std::string &symbol) { return env.envEntryExists(symbol); }
     IdEnvEntry *getSymbolIdEnvEntry(const std::string &symbol) override;
     IdEnv *getIdEnv();
     TypeRegistry *getTypeRegistry();
-    ClassScope *getClassScope(const std::string &classId);
+    Context *getContext();
 };
 
 

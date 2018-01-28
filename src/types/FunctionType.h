@@ -28,7 +28,7 @@ public:
     bool operator== (const Type &rhs) const override;
     llvm::Type *getLlvmType(Context *ctx) override;
     llvm::Function *generateFunction(Context *ctx, const std::string &name);
-    const Type* getRetType();
+    Type* getRetType();
     const std::vector<Type *> getArgsType();
 
     bool isFunctionType() const override;

@@ -27,8 +27,6 @@ ClassType *GlobalScope::defineClass(const std::string &className) {
         throw std::invalid_argument("Redefinition of type symbol \"" + className + "\"");
     ret->defineClass();
 
-    classScopes[className] = scopeReg->getNewClassScope(ctx, reg, this);
-
     return ret;
 }
 
@@ -147,13 +145,6 @@ TypeRegistry *GlobalScope::getTypeRegistry() {
     return reg;
 }
 
-ClassScope *GlobalScope::getClassScope(const std::string &classId) {
-    if (classScopes.find(classId) != classScopes.end()) {
-        return classScopes[classId];
-    }
-    return nullptr;
-}
-
 void GlobalScope::declareClassFunction(const std::string &className, const std::string &funName, Type *returnType,
                                        std::vector<Type *> argTypes) {
     if (!reg->typeExits(className))
@@ -213,7 +204,7 @@ void GlobalScope::createFunctionScope(const std::string &funName, const std::vec
         FunctionType *funType = dynamic_cast<FunctionType *>(funEntry.getEntryType());
         if (funType == nullptr)
             throw std::invalid_argument("Symbol \"" + funName + "\" is not a function");
-        FunctionScope *funScope = scopeReg->getNewFunctionScope(this, funType, argNames);
+        FunctionScope *funScope = scopeReg->getNewFunctionScope(ctx, this, funType, funName, argNames);
         this->functionScopes[funName] = funScope;
     } catch (std::invalid_argument &e) {
         throw e;
@@ -228,11 +219,26 @@ void GlobalScope::checkClassHierarchy(std::vector<std::string> &errors) {
         try {
             classType->initializeMemberData();
         } catch (std::invalid_argument &e) {
-            errors.push_back(e.what());
+            errors.emplace_back(e.what());
         }
     }
 }
 
 IdEnv *GlobalScope::getIdEnv() {
     return &this->env;
+}
+
+Context *GlobalScope::getContext() {
+    return this->ctx;
+}
+
+FunctionScope *GlobalScope::getFunctionScope(const std::string &funName) {
+    if (functionScopes.find(funName) != functionScopes.end()) {
+        return functionScopes[funName];
+    }
+    return nullptr;
+}
+
+void GlobalScope::declareVariable(const std::string &symbol, Type *t) {
+    assert(false && "declareVariable unimplemented");
 }

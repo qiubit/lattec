@@ -28,6 +28,7 @@
 #include "operations/ConstIntOp.h"
 #include "operations/StringAddOp.h"
 #include "operations/IntModOp.h"
+#include "visitors/FunctionScopeVisitor.h"
 
 int main() {
     TypeRegistry registry;
@@ -130,7 +131,7 @@ int main() {
     auto globalScopeVisitorErrors = globalScopeVisitor.getErrors();
     if (globalScopeVisitorErrors.size() > 0) {
         std::cerr << "ERROR" << std::endl;
-        for (std::string s : globalScopeVisitorErrors) {
+        for (std::string &s : globalScopeVisitorErrors) {
             std::cerr << s << std::endl;
         }
         return 1;
@@ -149,17 +150,31 @@ int main() {
     auto errors = globalScope.errorChecks();
     if (errors.size() > 0) {
         std::cerr << "ERROR" << std::endl;
-        for (std::string error : errors) {
+        for (std::string &error : errors) {
             std::cerr << error << std::endl;
+        }
+        return 1;
+    }
+
+    FunctionScopeVisitor functionScopeVisitor{&globalScope, &scopeReg};
+    functionScopeVisitor.visit(tree);
+
+    auto functionScopeVisitorErrors = functionScopeVisitor.getErrors();
+    if (functionScopeVisitorErrors.size() > 0) {
+        std::cerr << "ERROR" << std::endl;
+        for (std::string &s : functionScopeVisitorErrors) {
+            std::cerr << s << std::endl;
         }
         return 1;
     }
 
     // class.in test
 
+    /*
     llvm::Function *f = globalScope.getSymbolIdEnvEntry("main")->getEntryFunction();
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(*ctx.getContext(), "entry", f);
     ctx.getBuilder()->SetInsertPoint(BB);
+     */
     /*
     auto ptrAlloca = ctx.getBuilder()->CreateAlloca(registry.getBytePtrType()->getLlvmType(&ctx));
     auto intAlloca = ctx.getBuilder()->CreateAlloca(registry.getIntType()->getLlvmType(&ctx));
@@ -174,11 +189,12 @@ int main() {
      */
     auto testClass = dynamic_cast<ClassType *>(registry.getType("Test"));
     auto testClass2 = dynamic_cast<ClassType *>(registry.getType("Test2"));
-    auto newOp = NewOp(&ctx, globalScope.getIdEnv(), testClass2);
+    //auto newOp = NewOp(&ctx, globalScope.getIdEnv(), testClass2);
     /*
     auto oneVal = ctx.getBuilder()->getInt1(true);
     auto testedOp = BooleanNotOp(&ctx, &registry, oneVal);
      */
+    /*
     auto oneVal = ctx.getBuilder()->getInt32(1);
     auto zeroVal = ctx.getBuilder()->getInt32(0);
     auto testedOp = IntDivOp(&ctx, &registry, oneVal, zeroVal);
@@ -186,6 +202,7 @@ int main() {
     auto intOp = ConstIntOp(&ctx, &registry, -42);
     auto modOp = IntModOp(&ctx, &registry, oneVal, oneVal);
     ctx.getBuilder()->CreateRet(newOp.getOpVal());
+     */
 
     std::cerr << "OK" << std::endl;
 

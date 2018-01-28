@@ -4,32 +4,43 @@
 
 #include "GlobalScopeVisitor.h"
 
-
+// Fetch appropriate type from TypeRegistry
 Type *GlobalScopeVisitor::getTypeFromRegistry(antlr4::ParserRuleContext *parsingCtx, const std::string &typeId, TypeRegistry *reg) {
     Type *type = nullptr;
+
+    // If type is not present, we forward reference it as a class (currently only class is named type)
     if (!reg->typeExits(typeId)) {
         type = globalScope->referenceClass(typeId);
-    } else {
+    }
+    // Otherwise, we fetch it straight from TypeRegistry
+    else {
         type = reg->getType(typeId);
     }
+
+    // This shouldn't happen - in either branch of if stmt above, type should get fetched
     if (type == nullptr) {
         reportError(parsingCtx, "Invalid return type \"" + typeId + "\"");
     }
+
     return type;
 }
 
 antlrcpp::Any GlobalScopeVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx) {
+    // Visits top-def function definition or class function definition
     TypeRegistry *reg = globalScope->getTypeRegistry();
     std::string funName = ctx->ID()->getText();
 
+    // Fetch function return type
     std::string retTypeStr = ctx->type_()->getText();
     Type *returnType = getTypeFromRegistry(ctx, retTypeStr, reg);
 
+    // Fetch function arguments type
     std::vector<Type *> argsType;
     // If this is a class member function, class instance will be supplied as first argument
     if (classVisited != "") {
         argsType.emplace_back(reg->getType(classVisited));
     }
+    // Fills argsType vector
     if (ctx->arg()) {
         for (auto argTypeCtx : ctx->arg()->type_()) {
             Type *argType = getTypeFromRegistry(ctx, argTypeCtx->getText(), reg);
@@ -43,14 +54,15 @@ antlrcpp::Any GlobalScopeVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx)
 
     try {
         std::vector<std::string> argNames;
-        if (classVisited != "")
-            argNames.push_back("this");
+        // If function is a class member function, than the first argument will be accessible under name "this"
+        if (!classVisited.empty())
+            argNames.emplace_back("this");
         if (ctx->arg() != nullptr) {
             for (auto argIdCtx : ctx->arg()->ID()) {
                 argNames.push_back(argIdCtx->getText());
             }
         }
-        if (classVisited == "") {
+        if (classVisited.empty()) {
             globalScope->declareFunction(funName, returnType, argsType);
             globalScope->defineFunction(funName);
             globalScope->createFunctionScope(funName, argNames);
@@ -72,13 +84,13 @@ antlrcpp::Any GlobalScopeVisitor::visitFunTopDef(LatteParser::FunTopDefContext *
 }
 
 antlrcpp::Any GlobalScopeVisitor::visitClassDef(LatteParser::ClassDefContext *ctx) {
-    // Fetch parent class type
+    // Fetch parent class type, if present
     ClassType *parentClassType = nullptr;
     if (ctx->ID().size() > 1) {
         std::string parentName = ctx->ID()[1]->getText();
         parentClassType = globalScope->referenceClass(parentName);
         if (parentClassType == nullptr) {
-            reportError(ctx, "Referenced symbol " + parentName + " is not a class");
+            reportError(ctx, "Referenced symbol \"" + parentName + "\" is not a class");
             return nullptr;
         }
     }
@@ -106,12 +118,13 @@ antlrcpp::Any GlobalScopeVisitor::visitClassFunDef(LatteParser::ClassFunDefConte
 }
 
 antlrcpp::Any GlobalScopeVisitor::visitClassVarDef(LatteParser::ClassVarDefContext *ctx) {
+    // Visits class member variable definition - this adds appropriate member metadata to corresponding ClassType
     TypeRegistry *reg = globalScope->getTypeRegistry();
     Type *declType = getTypeFromRegistry(ctx, ctx->type_()->getText(), reg);
     if (declType == nullptr)
         return nullptr;
     if (declType == reg->getVoidType()) {
-        reportError(ctx, "Invalid variable declaration of type \"void\"");
+        reportError(ctx, "Invalid member variable declaration of type \"void\"");
         return nullptr;
     }
     for (auto itemCtx : ctx->item()) {

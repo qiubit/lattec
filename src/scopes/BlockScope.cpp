@@ -11,3 +11,12 @@ IdEnvEntry *BlockScope::getSymbolIdEnvEntry(const std::string &symbol) {
     } else
         return parent->getSymbolIdEnvEntry(symbol);
 }
+
+
+void BlockScope::declareVariable(const std::string &symbol, Type *t) {
+    if (env.envEntryExists(symbol))
+        throw std::invalid_argument("Symbol \"" + symbol + "\" already defined in current scope");
+    else {
+        env.addEnvEntryForId(symbol, t);
+    }
+}

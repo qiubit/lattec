@@ -7,8 +7,10 @@
 
 
 #include "../parser/LatteBaseVisitor.h"
+#include "../scopes/FunctionScope.h"
+#include "../scopes/BlockScope.h"
 
-// Binds BlockScopes to FunctionScopes
+// Binds BlockScopes to FunctionScopes, fills FunctionScopes
 
 // Checks for:
 // - Duplicate declarations
@@ -18,11 +20,25 @@
 
 class FunctionScopeVisitor : public LatteBaseVisitor {
 private:
-    std::unordered_set<LatteParser::StmtContext *> invalidStmts;
     std::vector<std::string> errors;
-    LatteParser::StmtContext *currentStmt = nullptr;
-    LatteParser::ExprContext *currentExpr = nullptr;
+    std::string visitedClass = "";
+    FunctionScope *currentFunctionScope = nullptr;
+    GlobalScope *globalScope;
+    ScopeRegistry *scopeReg;
+    Type *currentDeclType = nullptr;
+
+    std::unordered_map<LatteParser::StmtContext *, Scope *> stmtScopes;
+    std::unordered_map<LatteParser::ExprContext *, Type *> exprTypes;
+
+    Scope *currentScope = nullptr;
+
+    void reportError(antlr4::ParserRuleContext *ctx, std::string msg);
+
 public:
+    FunctionScopeVisitor(GlobalScope *gs, ScopeRegistry *sr) : globalScope(gs), scopeReg(sr) { }
+
+    std::vector<std::string> getErrors() { return errors; }
+
     antlrcpp::Any visitProgram(LatteParser::ProgramContext *ctx) override;
 
     antlrcpp::Any visitFuncDef(LatteParser::FuncDefContext *ctx) override;
@@ -65,16 +81,6 @@ public:
 
     antlrcpp::Any visitSExp(LatteParser::SExpContext *ctx) override;
 
-    antlrcpp::Any visitInt(LatteParser::IntContext *ctx) override;
-
-    antlrcpp::Any visitStr(LatteParser::StrContext *ctx) override;
-
-    antlrcpp::Any visitBool(LatteParser::BoolContext *ctx) override;
-
-    antlrcpp::Any visitVoid(LatteParser::VoidContext *ctx) override;
-
-    antlrcpp::Any visitClass(LatteParser::ClassContext *ctx) override;
-
     antlrcpp::Any visitItem(LatteParser::ItemContext *ctx) override;
 
     antlrcpp::Any visitEId(LatteParser::EIdContext *ctx) override;
@@ -110,12 +116,6 @@ public:
     antlrcpp::Any visitEAddOp(LatteParser::EAddOpContext *ctx) override;
 
     antlrcpp::Any visitEClassFun(LatteParser::EClassFunContext *ctx) override;
-
-    antlrcpp::Any visitAddOp(LatteParser::AddOpContext *ctx) override;
-
-    antlrcpp::Any visitMulOp(LatteParser::MulOpContext *ctx) override;
-
-    antlrcpp::Any visitRelOp(LatteParser::RelOpContext *ctx) override;
 };
 
 

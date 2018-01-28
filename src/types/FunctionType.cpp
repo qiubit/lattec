@@ -85,7 +85,7 @@ llvm::Function *FunctionType::generateFunction(Context *ctx, const std::string &
     return nullptr;
 }
 
-const Type *FunctionType::getRetType() {
+Type *FunctionType::getRetType() {
     return retType;
 }
 

@@ -12,13 +12,15 @@
 
 class BlockScope : public Scope {
 private:
+    Context *ctx;
     TypeRegistry *reg;
     Scope *parent;
     IdEnv env;
 
 public:
-    BlockScope(TypeRegistry *reg, Scope *parent) : reg(reg), parent(parent) { }
+    BlockScope(Context *ctx, TypeRegistry *reg, Scope *parent) : ctx(ctx), reg(reg), parent(parent) { }
     IdEnvEntry *getSymbolIdEnvEntry(const std::string &symbol) override;
+    void declareVariable(const std::string &symbol, Type *t) override;
 };
 
 

@@ -13,7 +13,7 @@
 #include "../scopes/GlobalScope.h"
 
 
-// Fills GlobalScope and attached FunctionScopes
+// Fills GlobalScope
 
 // Checks for:
 // - Inheritance cycles,
