@@ -35,6 +35,7 @@ public:
     virtual bool isFunctionType() const { return false; }
     virtual bool isClass() const { return false; }
     virtual bool isTypeComplete() const { return true; }
+    virtual bool isArray() const { return false; }
 };
 
 namespace std {

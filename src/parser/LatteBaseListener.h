@@ -58,6 +58,9 @@ public:
   virtual void enterClassAss(LatteParser::ClassAssContext * /*ctx*/) override { }
   virtual void exitClassAss(LatteParser::ClassAssContext * /*ctx*/) override { }
 
+  virtual void enterArrAss(LatteParser::ArrAssContext * /*ctx*/) override { }
+  virtual void exitArrAss(LatteParser::ArrAssContext * /*ctx*/) override { }
+
   virtual void enterIncr(LatteParser::IncrContext * /*ctx*/) override { }
   virtual void exitIncr(LatteParser::IncrContext * /*ctx*/) override { }
 
@@ -79,23 +82,29 @@ public:
   virtual void enterWhile(LatteParser::WhileContext * /*ctx*/) override { }
   virtual void exitWhile(LatteParser::WhileContext * /*ctx*/) override { }
 
+  virtual void enterForArr(LatteParser::ForArrContext * /*ctx*/) override { }
+  virtual void exitForArr(LatteParser::ForArrContext * /*ctx*/) override { }
+
   virtual void enterSExp(LatteParser::SExpContext * /*ctx*/) override { }
   virtual void exitSExp(LatteParser::SExpContext * /*ctx*/) override { }
-
-  virtual void enterInt(LatteParser::IntContext * /*ctx*/) override { }
-  virtual void exitInt(LatteParser::IntContext * /*ctx*/) override { }
 
   virtual void enterStr(LatteParser::StrContext * /*ctx*/) override { }
   virtual void exitStr(LatteParser::StrContext * /*ctx*/) override { }
 
+  virtual void enterArrType(LatteParser::ArrTypeContext * /*ctx*/) override { }
+  virtual void exitArrType(LatteParser::ArrTypeContext * /*ctx*/) override { }
+
   virtual void enterBool(LatteParser::BoolContext * /*ctx*/) override { }
   virtual void exitBool(LatteParser::BoolContext * /*ctx*/) override { }
+
+  virtual void enterClass(LatteParser::ClassContext * /*ctx*/) override { }
+  virtual void exitClass(LatteParser::ClassContext * /*ctx*/) override { }
 
   virtual void enterVoid(LatteParser::VoidContext * /*ctx*/) override { }
   virtual void exitVoid(LatteParser::VoidContext * /*ctx*/) override { }
 
-  virtual void enterClass(LatteParser::ClassContext * /*ctx*/) override { }
-  virtual void exitClass(LatteParser::ClassContext * /*ctx*/) override { }
+  virtual void enterInt(LatteParser::IntContext * /*ctx*/) override { }
+  virtual void exitInt(LatteParser::IntContext * /*ctx*/) override { }
 
   virtual void enterItem(LatteParser::ItemContext * /*ctx*/) override { }
   virtual void exitItem(LatteParser::ItemContext * /*ctx*/) override { }
@@ -118,6 +127,9 @@ public:
   virtual void enterETrue(LatteParser::ETrueContext * /*ctx*/) override { }
   virtual void exitETrue(LatteParser::ETrueContext * /*ctx*/) override { }
 
+  virtual void enterENewArr(LatteParser::ENewArrContext * /*ctx*/) override { }
+  virtual void exitENewArr(LatteParser::ENewArrContext * /*ctx*/) override { }
+
   virtual void enterEOr(LatteParser::EOrContext * /*ctx*/) override { }
   virtual void exitEOr(LatteParser::EOrContext * /*ctx*/) override { }
 
@@ -138,6 +150,9 @@ public:
 
   virtual void enterEAnd(LatteParser::EAndContext * /*ctx*/) override { }
   virtual void exitEAnd(LatteParser::EAndContext * /*ctx*/) override { }
+
+  virtual void enterEArrIdx(LatteParser::EArrIdxContext * /*ctx*/) override { }
+  virtual void exitEArrIdx(LatteParser::EArrIdxContext * /*ctx*/) override { }
 
   virtual void enterEParen(LatteParser::EParenContext * /*ctx*/) override { }
   virtual void exitEParen(LatteParser::EParenContext * /*ctx*/) override { }

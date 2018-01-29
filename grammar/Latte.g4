@@ -36,6 +36,7 @@ stmt
     | type_ item ( ',' item )* ';'       # Decl
     | ID '=' expr ';'                    # Ass
     | expr '.' ID '=' expr ';'           # ClassAss
+    | expr '[' expr ']' '=' expr ';'     # ArrAss
     | ID '++' ';'                        # Incr
     | ID '--' ';'                        # Decr
     | 'return' expr ';'                  # Ret
@@ -43,6 +44,7 @@ stmt
     | 'if' '(' expr ')' stmt             # Cond
     | 'if' '(' expr ')' stmt 'else' stmt # CondElse
     | 'while' '(' expr ')' stmt          # While
+    | 'for' '(' type_ ID ':' expr ')' stmt  # ForArr
     | expr ';'                           # SExp
     ;
 
@@ -52,6 +54,7 @@ type_
     | 'boolean' # Bool
     | 'void'    # Void
     | ID        # Class
+    | type_ '[' ']' # ArrType
     ;
 
 item
@@ -76,6 +79,8 @@ expr
     | STR                           # EStr
     | '(' expr ')'                  # EParen
     | 'new' ID  # EClassDef
+    | 'new' type_ '[' expr ']'      # ENewArr
+    | ID '[' expr ']'               # EArrIdx
     | '(' ID ')' 'null' # ETypedNull
     ;
 

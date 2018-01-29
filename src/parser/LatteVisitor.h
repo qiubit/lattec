@@ -47,6 +47,8 @@ public:
 
     virtual antlrcpp::Any visitClassAss(LatteParser::ClassAssContext *context) = 0;
 
+    virtual antlrcpp::Any visitArrAss(LatteParser::ArrAssContext *context) = 0;
+
     virtual antlrcpp::Any visitIncr(LatteParser::IncrContext *context) = 0;
 
     virtual antlrcpp::Any visitDecr(LatteParser::DecrContext *context) = 0;
@@ -61,17 +63,21 @@ public:
 
     virtual antlrcpp::Any visitWhile(LatteParser::WhileContext *context) = 0;
 
-    virtual antlrcpp::Any visitSExp(LatteParser::SExpContext *context) = 0;
+    virtual antlrcpp::Any visitForArr(LatteParser::ForArrContext *context) = 0;
 
-    virtual antlrcpp::Any visitInt(LatteParser::IntContext *context) = 0;
+    virtual antlrcpp::Any visitSExp(LatteParser::SExpContext *context) = 0;
 
     virtual antlrcpp::Any visitStr(LatteParser::StrContext *context) = 0;
 
+    virtual antlrcpp::Any visitArrType(LatteParser::ArrTypeContext *context) = 0;
+
     virtual antlrcpp::Any visitBool(LatteParser::BoolContext *context) = 0;
+
+    virtual antlrcpp::Any visitClass(LatteParser::ClassContext *context) = 0;
 
     virtual antlrcpp::Any visitVoid(LatteParser::VoidContext *context) = 0;
 
-    virtual antlrcpp::Any visitClass(LatteParser::ClassContext *context) = 0;
+    virtual antlrcpp::Any visitInt(LatteParser::IntContext *context) = 0;
 
     virtual antlrcpp::Any visitItem(LatteParser::ItemContext *context) = 0;
 
@@ -87,6 +93,8 @@ public:
 
     virtual antlrcpp::Any visitETrue(LatteParser::ETrueContext *context) = 0;
 
+    virtual antlrcpp::Any visitENewArr(LatteParser::ENewArrContext *context) = 0;
+
     virtual antlrcpp::Any visitEOr(LatteParser::EOrContext *context) = 0;
 
     virtual antlrcpp::Any visitEInt(LatteParser::EIntContext *context) = 0;
@@ -100,6 +108,8 @@ public:
     virtual antlrcpp::Any visitEMulOp(LatteParser::EMulOpContext *context) = 0;
 
     virtual antlrcpp::Any visitEAnd(LatteParser::EAndContext *context) = 0;
+
+    virtual antlrcpp::Any visitEArrIdx(LatteParser::EArrIdxContext *context) = 0;
 
     virtual antlrcpp::Any visitEParen(LatteParser::EParenContext *context) = 0;
 

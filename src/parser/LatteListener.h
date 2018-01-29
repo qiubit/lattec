@@ -56,6 +56,9 @@ public:
   virtual void enterClassAss(LatteParser::ClassAssContext *ctx) = 0;
   virtual void exitClassAss(LatteParser::ClassAssContext *ctx) = 0;
 
+  virtual void enterArrAss(LatteParser::ArrAssContext *ctx) = 0;
+  virtual void exitArrAss(LatteParser::ArrAssContext *ctx) = 0;
+
   virtual void enterIncr(LatteParser::IncrContext *ctx) = 0;
   virtual void exitIncr(LatteParser::IncrContext *ctx) = 0;
 
@@ -77,23 +80,29 @@ public:
   virtual void enterWhile(LatteParser::WhileContext *ctx) = 0;
   virtual void exitWhile(LatteParser::WhileContext *ctx) = 0;
 
+  virtual void enterForArr(LatteParser::ForArrContext *ctx) = 0;
+  virtual void exitForArr(LatteParser::ForArrContext *ctx) = 0;
+
   virtual void enterSExp(LatteParser::SExpContext *ctx) = 0;
   virtual void exitSExp(LatteParser::SExpContext *ctx) = 0;
-
-  virtual void enterInt(LatteParser::IntContext *ctx) = 0;
-  virtual void exitInt(LatteParser::IntContext *ctx) = 0;
 
   virtual void enterStr(LatteParser::StrContext *ctx) = 0;
   virtual void exitStr(LatteParser::StrContext *ctx) = 0;
 
+  virtual void enterArrType(LatteParser::ArrTypeContext *ctx) = 0;
+  virtual void exitArrType(LatteParser::ArrTypeContext *ctx) = 0;
+
   virtual void enterBool(LatteParser::BoolContext *ctx) = 0;
   virtual void exitBool(LatteParser::BoolContext *ctx) = 0;
+
+  virtual void enterClass(LatteParser::ClassContext *ctx) = 0;
+  virtual void exitClass(LatteParser::ClassContext *ctx) = 0;
 
   virtual void enterVoid(LatteParser::VoidContext *ctx) = 0;
   virtual void exitVoid(LatteParser::VoidContext *ctx) = 0;
 
-  virtual void enterClass(LatteParser::ClassContext *ctx) = 0;
-  virtual void exitClass(LatteParser::ClassContext *ctx) = 0;
+  virtual void enterInt(LatteParser::IntContext *ctx) = 0;
+  virtual void exitInt(LatteParser::IntContext *ctx) = 0;
 
   virtual void enterItem(LatteParser::ItemContext *ctx) = 0;
   virtual void exitItem(LatteParser::ItemContext *ctx) = 0;
@@ -116,6 +125,9 @@ public:
   virtual void enterETrue(LatteParser::ETrueContext *ctx) = 0;
   virtual void exitETrue(LatteParser::ETrueContext *ctx) = 0;
 
+  virtual void enterENewArr(LatteParser::ENewArrContext *ctx) = 0;
+  virtual void exitENewArr(LatteParser::ENewArrContext *ctx) = 0;
+
   virtual void enterEOr(LatteParser::EOrContext *ctx) = 0;
   virtual void exitEOr(LatteParser::EOrContext *ctx) = 0;
 
@@ -136,6 +148,9 @@ public:
 
   virtual void enterEAnd(LatteParser::EAndContext *ctx) = 0;
   virtual void exitEAnd(LatteParser::EAndContext *ctx) = 0;
+
+  virtual void enterEArrIdx(LatteParser::EArrIdxContext *ctx) = 0;
+  virtual void exitEArrIdx(LatteParser::EArrIdxContext *ctx) = 0;
 
   virtual void enterEParen(LatteParser::EParenContext *ctx) = 0;
   virtual void exitEParen(LatteParser::EParenContext *ctx) = 0;

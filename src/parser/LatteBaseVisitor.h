@@ -71,6 +71,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitArrAss(LatteParser::ArrAssContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitIncr(LatteParser::IncrContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -99,11 +103,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitSExp(LatteParser::SExpContext *ctx) override {
+  virtual antlrcpp::Any visitForArr(LatteParser::ForArrContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInt(LatteParser::IntContext *ctx) override {
+  virtual antlrcpp::Any visitSExp(LatteParser::SExpContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -111,7 +115,15 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitArrType(LatteParser::ArrTypeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitBool(LatteParser::BoolContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitClass(LatteParser::ClassContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -119,7 +131,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitClass(LatteParser::ClassContext *ctx) override {
+  virtual antlrcpp::Any visitInt(LatteParser::IntContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -151,6 +163,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitENewArr(LatteParser::ENewArrContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitEOr(LatteParser::EOrContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -176,6 +192,10 @@ public:
   }
 
   virtual antlrcpp::Any visitEAnd(LatteParser::EAndContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitEArrIdx(LatteParser::EArrIdxContext *ctx) override {
     return visitChildren(ctx);
   }
 
