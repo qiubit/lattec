@@ -15,8 +15,8 @@ FunctionScope::FunctionScope(Context *ctx, GlobalScope *globalScope, FunctionTyp
     if (argNames.size() != this->functionType->getArgsType().size()) {
         throw std::invalid_argument("Function argument list not compatible with function type [unequal size]");
     }
-    if (parent != nullptr && (argNames.empty() || argNames[0] != "this"))
-        throw std::runtime_error("First argument of class function should be \"this\"");
+    if (parent != nullptr && (argNames.empty() || argNames[0] != "self"))
+        throw std::runtime_error("First argument of class function should be \"self\"");
     // Check for duplicate argument symbols
     std::unordered_set<std::string> set;
     for (auto &str : argNames) {
@@ -60,7 +60,7 @@ void FunctionScope::defineFunctionParameterVars() {
 void FunctionScope::setParent(ClassScope *classScope) {
     this->parent = classScope;
     classScope->bindClassInstanceBytePtr(
-            ctx->getBuilder()->CreateLoad(idEnv.getEnvEntryForId("this").getEntryAlloca())
+            ctx->getBuilder()->CreateLoad(idEnv.getEnvEntryForId("self").getEntryAlloca())
     );
 }
 

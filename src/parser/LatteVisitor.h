@@ -45,6 +45,8 @@ public:
 
     virtual antlrcpp::Any visitAss(LatteParser::AssContext *context) = 0;
 
+    virtual antlrcpp::Any visitClassAss(LatteParser::ClassAssContext *context) = 0;
+
     virtual antlrcpp::Any visitIncr(LatteParser::IncrContext *context) = 0;
 
     virtual antlrcpp::Any visitDecr(LatteParser::DecrContext *context) = 0;

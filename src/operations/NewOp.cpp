@@ -6,6 +6,6 @@
 
 llvm::Value *NewOp::createNewObject(Context *ctx, IdEnv *functionEnv, ClassType *classType) {
     auto classPtr = classType->allocateClass(ctx);
-    classType->overwriteVirtualFunctions(ctx, functionEnv, classPtr);
+    classType->overwriteVirtualFunctionsAndMembers(ctx, functionEnv, classPtr);
     return classPtr;
 }

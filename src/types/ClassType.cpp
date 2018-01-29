@@ -130,33 +130,57 @@ Type *ClassType::getMemberType(const std::string &memberName) {
 }
 
 // TODO: quadratic... and messy :<
-void ClassType::overwriteVirtualFunctions(Context *ctx, IdEnv *functionEnv, llvm::Value *classBytePtr) {
+void ClassType::overwriteVirtualFunctionsAndMembers(Context *ctx, IdEnv *functionEnv, llvm::Value *classBytePtr) {
+    initializeMemberData();
     // Nothing to do if no parent
     if (parentClass != nullptr) {
-        parentClass->overwriteVirtualFunctions(ctx, functionEnv, classBytePtr);
-        auto classStructType = getClassStructType(ctx);
-        auto classPtr = bitcastToClassPtr(ctx, classBytePtr);
-        for (auto &it : memberOffsets) {
-            const std::string &memberName = it.first;
-            int memberOffset = it.second;
-            Type *memberType = memberTypes[memberName];
+        parentClass->overwriteVirtualFunctionsAndMembers(ctx, functionEnv, classBytePtr);
+    }
+    auto classStructType = getClassStructType(ctx);
+    auto classPtr = bitcastToClassPtr(ctx, classBytePtr);
+    for (auto &it : memberOffsets) {
+        const std::string &memberName = it.first;
+        Type *memberType = memberTypes[memberName];
 
-            if (localNameToMemberIdx.find(memberName) != localNameToMemberIdx.end()) {
-                if (memberType->isFunctionType()) {
-                    std::vector<int> allMemberOffsets = this->allMemberOffsets[memberName];
-                    IdEnvEntry &envEntry = functionEnv->getEnvEntryForId(this->getTypeId() + "." + memberName);
-                    llvm::Function *myFunction = envEntry.getEntryFunction();
-                    for (auto offset : allMemberOffsets) {
-                        auto functionPtr = ctx->getBuilder()->CreateGEP(
-                                classStructType,
-                                classPtr,
-                                std::vector<llvm::Value *>{
-                                        ctx->getBuilder()->getInt32(0),
-                                        ctx->getBuilder()->getInt32(offset)
-                                }
-                        );
-                        ctx->getBuilder()->CreateStore(myFunction, functionPtr);
-                    }
+        if (localNameToMemberIdx.find(memberName) != localNameToMemberIdx.end()) {
+            if (memberType->isFunctionType()) {
+                std::vector<int> allMemberOffsets = this->allMemberOffsets[memberName];
+                IdEnvEntry &envEntry = functionEnv->getEnvEntryForId(this->getTypeId() + "." + memberName);
+                llvm::Function *myFunction = envEntry.getEntryFunction();
+                for (auto offset : allMemberOffsets) {
+                    auto functionPtr = ctx->getBuilder()->CreateGEP(
+                            classStructType,
+                            classPtr,
+                            std::vector<llvm::Value *>{
+                                    ctx->getBuilder()->getInt32(0),
+                                    ctx->getBuilder()->getInt32(offset)
+                            }
+                    );
+                    ctx->getBuilder()->CreateStore(myFunction, functionPtr);
+                }
+            }
+        }
+    }
+    for (auto &it : memberOffsets) {
+        const std::string &memberName = it.first;
+        Type *memberType = memberTypes[memberName];
+        if (!memberType->isFunctionType()) {
+            std::vector<int> allMemberOffsets = this->allMemberOffsets[memberName];
+            for (auto offset : allMemberOffsets) {
+                auto memberPtr = ctx->getBuilder()->CreateGEP(
+                        classStructType,
+                        classPtr,
+                        std::vector<llvm::Value *>{
+                                ctx->getBuilder()->getInt32(0),
+                                ctx->getBuilder()->getInt32(offset)
+                        }
+                );
+                if (memberType->getTypeId() == "int") {
+                    ctx->getBuilder()->CreateStore(ctx->getBuilder()->getInt32(0), memberPtr);
+                } else if (memberType->getTypeId() == "boolean") {
+                    ctx->getBuilder()->CreateStore(ctx->getBuilder()->getInt1(false), memberPtr);
+                } else {
+                    ctx->getBuilder()->CreateStore(llvm::ConstantPointerNull::get(ctx->getBuilder()->getInt8PtrTy(0)), memberPtr);
                 }
             }
         }

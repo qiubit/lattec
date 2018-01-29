@@ -69,6 +69,8 @@ public:
 
     antlrcpp::Any visitAss(LatteParser::AssContext *ctx) override;
 
+    antlrcpp::Any visitClassAss(LatteParser::ClassAssContext *ctx) override;
+
     antlrcpp::Any visitIncr(LatteParser::IncrContext *ctx) override;
 
     antlrcpp::Any visitDecr(LatteParser::DecrContext *ctx) override;

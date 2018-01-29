@@ -55,6 +55,9 @@ public:
   virtual void enterAss(LatteParser::AssContext * /*ctx*/) override { }
   virtual void exitAss(LatteParser::AssContext * /*ctx*/) override { }
 
+  virtual void enterClassAss(LatteParser::ClassAssContext * /*ctx*/) override { }
+  virtual void exitClassAss(LatteParser::ClassAssContext * /*ctx*/) override { }
+
   virtual void enterIncr(LatteParser::IncrContext * /*ctx*/) override { }
   virtual void exitIncr(LatteParser::IncrContext * /*ctx*/) override { }
 

@@ -13,7 +13,7 @@ private:
     std::string entryId;
     Type *entryType;
 
-    llvm::AllocaInst *entryAlloca = nullptr;
+    llvm::Value *entryAlloca = nullptr;
     llvm::Function *entryFunction = nullptr;
     llvm::Value *entryValue = nullptr;
 public:
@@ -21,11 +21,11 @@ public:
     const std::string &getEntryId() const { return entryId; }
     Type *getEntryType() const { return entryType; }
 
-    llvm::AllocaInst *getEntryAlloca() const { return entryAlloca; }
+    llvm::Value *getEntryAlloca() const { return entryAlloca; }
     llvm::Function *getEntryFunction() const { return entryFunction; }
     llvm::Value *getEntryValue() const { return entryValue; }
 
-    void setEntryAlloca(llvm::AllocaInst *val) { entryAlloca = val; }
+    void setEntryAlloca(llvm::Value *val) { entryAlloca = val; }
     void setEntryFunction(llvm::Function *val) { entryFunction = val; }
     void setEntryValue(llvm::Value *val) { entryValue = val; }
 };

@@ -67,6 +67,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitClassAss(LatteParser::ClassAssContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitIncr(LatteParser::IncrContext *ctx) override {
     return visitChildren(ctx);
   }

@@ -103,7 +103,7 @@ antlrcpp::Any CodegenVisitor::visitClassFunDef(LatteParser::ClassFunDefContext *
 }
 
 antlrcpp::Any CodegenVisitor::visitClassVarDef(LatteParser::ClassVarDefContext *ctx) {
-    return LatteBaseVisitor::visitClassVarDef(ctx);
+    return nullptr;
 }
 
 antlrcpp::Any CodegenVisitor::visitClassBody(LatteParser::ClassBodyContext *ctx) {
@@ -147,6 +147,18 @@ antlrcpp::Any CodegenVisitor::visitAss(LatteParser::AssContext *ctx) {
         visit(ctx->expr());
         auto varLoc = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText())->getEntryAlloca();
         codegenCtx->getBuilder()->CreateStore(exprValues[ctx->expr()], varLoc);
+    }
+    return nullptr;
+}
+
+antlrcpp::Any CodegenVisitor::visitClassAss(LatteParser::ClassAssContext *ctx) {
+    if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
+        visit(ctx->expr()[0]);
+        visit(ctx->expr()[1]);
+        ClassType *classType = dynamic_cast<ClassType *>(exprTypes[ctx->expr()[0]]);
+        llvm::Value *classBytePtr = exprValues[ctx->expr()[0]];
+        llvm::Value *classMemberPtr = classType->getMemberVariablePtr(codegenCtx, ctx->ID()->getText(), classBytePtr);
+        codegenCtx->getBuilder()->CreateStore(exprValues[ctx->expr()[1]], classMemberPtr);
     }
     return nullptr;
 }
@@ -601,7 +613,8 @@ antlrcpp::Any CodegenVisitor::visitEClassFun(LatteParser::EClassFunContext *ctx)
     }
 
     auto fnPtr = classType->getMemberVariablePtr(codegenCtx, ctx->ID()->getText(), classPtr);
-    exprValues[ctx] = codegenCtx->getBuilder()->CreateCall(fnPtr, fnArgs);
+    auto fn = codegenCtx->getBuilder()->CreateLoad(fnPtr);
+    exprValues[ctx] = codegenCtx->getBuilder()->CreateCall(fn, fnArgs);
 
     return LatteBaseVisitor::visitEClassFun(ctx);
 }

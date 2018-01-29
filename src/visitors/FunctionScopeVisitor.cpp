@@ -66,7 +66,7 @@ antlrcpp::Any FunctionScopeVisitor::visitClassFunDef(LatteParser::ClassFunDefCon
 }
 
 antlrcpp::Any FunctionScopeVisitor::visitClassVarDef(LatteParser::ClassVarDefContext *ctx) {
-    return LatteBaseVisitor::visitClassVarDef(ctx);
+    return nullptr;
 }
 
 antlrcpp::Any FunctionScopeVisitor::visitClassBody(LatteParser::ClassBodyContext *ctx) {
@@ -135,9 +135,53 @@ antlrcpp::Any FunctionScopeVisitor::visitAss(LatteParser::AssContext *ctx) {
         return nullptr;
     }
     if (!(*lhsType == *rhsType)) {
-        reportError(ctx, "Assignment of incompatible types - \"" + lhsType->getTypeId() + "\" and \"" + rhsType->getTypeId() + "\"");
+        ClassType *exprType = dynamic_cast<ClassType *>(rhsType);
+        ClassType *declType = dynamic_cast<ClassType *>(lhsType);
+        if (declType == nullptr || exprType == nullptr)
+            reportError(ctx, "Incompatible declaration expression of type \"" + rhsType->getTypeId() + "\"");
+        else {
+            while (exprType != nullptr && exprType != declType) {
+                exprType = exprType->getParentClass();
+            }
+            if (exprType == nullptr)
+                reportError(ctx, "Assignment of incompatible types - \"" + lhsType->getTypeId() + "\" and \"" + rhsType->getTypeId() + "\"");
+        }
     }
 
+    return nullptr;
+}
+
+antlrcpp::Any FunctionScopeVisitor::visitClassAss(LatteParser::ClassAssContext *ctx) {
+    stmtScopes[ctx] = currentScope;
+
+    try {
+        visit(ctx->expr()[0]);
+    } catch (std::invalid_argument &e) {
+        reportError(ctx, e.what());
+        return nullptr;
+    }
+
+    ClassType *classType = dynamic_cast<ClassType *>(exprTypes[ctx->expr()[0]]);
+    if (classType == nullptr) {
+        reportError(ctx, "Expected class type for \".\" expression");
+        return nullptr;
+    }
+    Type *memberType = classType->getMemberType(ctx->ID()->getText());
+    if (memberType == nullptr) {
+        reportError(ctx, "Unknown class member \"" + ctx->ID()->getText() + "\"");
+        return nullptr;
+    }
+
+    try {
+        visit(ctx->expr()[1]);
+    } catch (std::invalid_argument &e) {
+        reportError(ctx, e.what());
+        return nullptr;
+    }
+    if (memberType != exprTypes[ctx->expr()[1]]) {
+        reportError(ctx, "Incompatible types for assignment");
+        return nullptr;
+    }
     return nullptr;
 }
 
@@ -278,7 +322,17 @@ antlrcpp::Any FunctionScopeVisitor::visitItem(LatteParser::ItemContext *ctx) {
         t = exprTypes[ctx->expr()];
     }
     if (!(*t == *currentDeclType)) {
-        throw std::invalid_argument("Incompatible declaration expression of type \"" + t->getTypeId() + "\"");
+        ClassType *exprType = dynamic_cast<ClassType *>(t);
+        ClassType *declType = dynamic_cast<ClassType *>(currentDeclType);
+        if (declType == nullptr || exprType == nullptr)
+            throw std::invalid_argument("Incompatible declaration expression of type \"" + t->getTypeId() + "\"");
+        else {
+            while (exprType != nullptr && exprType != declType) {
+                exprType = exprType->getParentClass();
+            }
+            if (exprType == nullptr)
+                throw std::invalid_argument("Incompatible declaration expression of wrong type");
+        }
     }
     currentScope->declareVariable(varIdStr, t);
     return nullptr;
@@ -286,7 +340,10 @@ antlrcpp::Any FunctionScopeVisitor::visitItem(LatteParser::ItemContext *ctx) {
 
 antlrcpp::Any FunctionScopeVisitor::visitEId(LatteParser::EIdContext *ctx) {
     auto idStr = ctx->ID()->getText();
-    Type *idType = currentScope->getSymbolIdEnvEntry(idStr)->getEntryType();
+    IdEnvEntry *envEntry = currentScope->getSymbolIdEnvEntry(idStr);
+    if (envEntry == nullptr)
+        throw std::invalid_argument("Symbol \"" + ctx->ID()->getText() + "\" is undefined");
+    Type *idType = envEntry->getEntryType();
     exprTypes[ctx] = idType;
     return nullptr;
 }
@@ -309,8 +366,26 @@ antlrcpp::Any FunctionScopeVisitor::visitEFunCall(LatteParser::EFunCallContext *
         Type *exprType = exprTypes[exprCtx];
         args.emplace_back(exprType);
     }
-    if (args != funType->getArgsType())
+
+    // Args type comparison with implicit downcasting
+    if (args.size() != funType->getArgsType().size())
         throw std::invalid_argument("Invalid arguments supplied to function \"" + funName + "\"");
+    for (size_t i = 0; i < args.size(); i++) {
+        ClassType *argT = dynamic_cast<ClassType *>(args[i]);
+        ClassType *funArgT = dynamic_cast<ClassType *>(funType->getArgsType()[i]);
+        if (argT != nullptr) {
+            if (funArgT == nullptr)
+                throw std::invalid_argument("Invalid arguments supplied to function \"" + funName + "\"");
+            while (argT != nullptr && argT != funArgT) {
+                argT = argT->getParentClass();
+            }
+            if (argT == nullptr)
+                throw std::invalid_argument("Invalid arguments supplied to function \"" + funName + "\"");
+        } else {
+            if (args[i] != funType->getArgsType()[i])
+                throw std::invalid_argument("Invalid arguments supplied to function \"" + funName + "\"");
+        }
+    }
 
     exprTypes[ctx] = funType->getRetType();
     return nullptr;
@@ -476,17 +551,36 @@ antlrcpp::Any FunctionScopeVisitor::visitEClassFun(LatteParser::EClassFunContext
     if (ct == nullptr)
         throw std::invalid_argument("Expected class type for \".\" expression");
     std::vector<Type *> argTypes;
-    // First argument to class function is class itself
-    argTypes.push_back(ct);
+    // Note that class will be put into first
     for (auto exprCtx : ctx->expr()) {
-        visit(exprCtx);
+        if (exprTypes.find(exprCtx) == exprTypes.end())
+            visit(exprCtx);
         argTypes.push_back(exprTypes[exprCtx]);
     }
     FunctionType *ft = dynamic_cast<FunctionType *>(ct->getMemberType(ctx->ID()->getText()));
     if (ft == nullptr)
         throw std::invalid_argument("\"" + ctx->ID()->getText() + "\" is not a class member function");
-    if (ft->getArgsType() != argTypes)
-        throw std::invalid_argument("Wrong type arguments to function \"" + ctx->ID()->getText() + "\"");
+
+    // Args type comparison with implicit downcasting
+    if (argTypes.size() != ft->getArgsType().size())
+        throw std::invalid_argument("Invalid arguments supplied to function \"" + ctx->ID()->getText() + "\"");
+    for (size_t i = 0; i < argTypes.size(); i++) {
+        ClassType *argT = dynamic_cast<ClassType *>(argTypes[i]);
+        ClassType *funArgT = dynamic_cast<ClassType *>(ft->getArgsType()[i]);
+        if (argT != nullptr) {
+            if (funArgT == nullptr)
+                throw std::invalid_argument("Invalid arguments supplied to function \"" + ctx->ID()->getText() + "\"");
+            while (argT != nullptr && argT != funArgT) {
+                argT = argT->getParentClass();
+            }
+            if (argT == nullptr)
+                throw std::invalid_argument("Invalid arguments supplied to function \"" + ctx->ID()->getText() + "\"");
+        } else {
+            if (argTypes[i] != ft->getArgsType()[i])
+                throw std::invalid_argument("Invalid arguments supplied to function \"" + ctx->ID()->getText() + "\"");
+        }
+    }
+
     exprTypes[ctx] = ft->getRetType();
     return nullptr;
 }

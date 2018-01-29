@@ -35,6 +35,7 @@ stmt
     | block                              # BlockStmt
     | type_ item ( ',' item )* ';'       # Decl
     | ID '=' expr ';'                    # Ass
+    | expr '.' ID '=' expr ';'           # ClassAss
     | ID '++' ';'                        # Incr
     | ID '--' ';'                        # Decr
     | 'return' expr ';'                  # Ret
@@ -59,7 +60,9 @@ item
     ;
 
 expr
-    : ('-'|'!') expr                      # EUnOp
+    : expr '.' ID                                  # EClassField
+    | expr '.' ID '(' ( expr ( ',' expr )* )? ')'  # EClassFun
+    | ('-'|'!') expr                      # EUnOp
     | expr mulOp expr                     # EMulOp
     | expr addOp expr                     # EAddOp
     | expr relOp expr                     # ERelOp
@@ -72,8 +75,6 @@ expr
     | ID '(' ( expr ( ',' expr )* )? ')'  # EFunCall
     | STR                           # EStr
     | '(' expr ')'                  # EParen
-    | expr '.' ID                   # EClassField
-    | expr '.' ID '(' ( expr ( ',' expr )* )? ')' # EClassFun
     | 'new' ID  # EClassDef
     | '(' ID ')' 'null' # ETypedNull
     ;

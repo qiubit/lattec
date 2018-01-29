@@ -54,9 +54,9 @@ antlrcpp::Any GlobalScopeVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx)
 
     try {
         std::vector<std::string> argNames;
-        // If function is a class member function, than the first argument will be accessible under name "this"
+        // If function is a class member function, than the first argument will be accessible under name "self"
         if (!classVisited.empty())
-            argNames.emplace_back("this");
+            argNames.emplace_back("self");
         if (ctx->arg() != nullptr) {
             for (auto argIdCtx : ctx->arg()->ID()) {
                 argNames.push_back(argIdCtx->getText());

@@ -53,6 +53,9 @@ public:
   virtual void enterAss(LatteParser::AssContext *ctx) = 0;
   virtual void exitAss(LatteParser::AssContext *ctx) = 0;
 
+  virtual void enterClassAss(LatteParser::ClassAssContext *ctx) = 0;
+  virtual void exitClassAss(LatteParser::ClassAssContext *ctx) = 0;
+
   virtual void enterIncr(LatteParser::IncrContext *ctx) = 0;
   virtual void exitIncr(LatteParser::IncrContext *ctx) = 0;
 

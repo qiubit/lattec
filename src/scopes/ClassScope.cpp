@@ -18,8 +18,11 @@ IdEnvEntry *ClassScope::getSymbolIdEnvEntry(const std::string &symbol) {
         if (classMemberType->isFunctionType())
             return globalScope->getSymbolIdEnvEntry(className + "." + symbol);
         // Else, we redirect to this ClassScope env, where it will be defined
-        else
-            return &env.addEnvEntryForId(symbol, classMemberType);
+        else {
+            IdEnvEntry *envEntry = &env.addEnvEntryForId(symbol, classMemberType);
+            defineClassMemberVariable(symbol);
+            return envEntry;
+        }
     }
 
     // Fallback if symbol is not a member of class
@@ -37,6 +40,7 @@ void ClassScope::defineClassMemberVariable(const std::string &symbol) {
         throw std::runtime_error("Symbol \"" + symbol + "\" doesn't define class member variable");
     IdEnvEntry &envEntry = env.getEnvEntryForId(symbol);
     envEntry.setEntryValue(classType->getMemberVariablePtr(ctx, symbol, classPtr));
+    envEntry.setEntryAlloca(classType->getMemberVariablePtr(ctx, symbol, classPtr));
 }
 
 void ClassScope::declareVariable(const std::string &symbol, Type *t) {
