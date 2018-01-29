@@ -5,6 +5,74 @@
 #include "FunctionScopeVisitor.h"
 
 
+bool FunctionScopeVisitor::isRightCompatibleWithLeft(Type *lhs, Type *rhs) {
+    if (lhs == rhs)
+        return true;
+    ClassType *lhsCasted = dynamic_cast<ClassType *>(lhs);
+    ClassType *rhsCasted = dynamic_cast<ClassType *>(rhs);
+    if (lhsCasted == nullptr || rhsCasted == nullptr)
+        return false;
+    while (rhsCasted != lhsCasted && rhsCasted != nullptr) {
+        rhsCasted = rhsCasted->getParentClass();
+    }
+    if (rhsCasted == nullptr)
+        return false;
+    else
+        return true;
+}
+
+antlrcpp::Any FunctionScopeVisitor::visitArrType(LatteParser::ArrTypeContext *ctx) {
+    return LatteBaseVisitor::visitArrType(ctx);
+}
+
+// Fetch appropriate type from TypeRegistry
+Type *FunctionScopeVisitor::getTypeFromRegistry(LatteParser::Type_Context *typeCtx, TypeRegistry *reg, bool wrapInArr) {
+    Type *type = nullptr;
+    std::string typeId = typeCtx->getText();
+
+    // Check if array, if yes - if one-dimensional
+    LatteParser::ArrTypeContext *arrTypeCtx = nullptr;
+    if (!wrapInArr) {
+        arrTypeCtx = dynamic_cast<LatteParser::ArrTypeContext *>(typeCtx);
+        if (arrTypeCtx != nullptr) {
+            LatteParser::ArrTypeContext *sndArrType = dynamic_cast<LatteParser::ArrTypeContext *>(arrTypeCtx->type_());
+            if (sndArrType != nullptr)
+                throw std::invalid_argument("Multidimensional arrays not supported, abandoning compile");
+            typeId = arrTypeCtx->type_()->getText();
+        }
+    }
+
+
+    // If type is not present, we forward reference it as a class (currently only class is named type)
+    if (!reg->typeExits(typeId)) {
+        type = globalScope->referenceClass(typeId);
+    }
+        // Otherwise, we fetch it straight from TypeRegistry
+    else {
+        type = reg->getType(typeId);
+    }
+
+    if (type == nullptr)
+        throw std::invalid_argument("Unknown type \"" + typeCtx->getText() + "\"");
+
+    // Finally, if we were processing "inside-array" type, wrap it into array again
+    if (!wrapInArr) {
+        if (arrTypeCtx != nullptr) {
+            type = reg->getArrayType(type);
+        }
+    } else {
+        if (dynamic_cast<ArrayType *>(type) != nullptr)
+            throw std::invalid_argument("Can't wrap type \"" + typeCtx->getText() + "\" into array");
+        type = reg->getArrayType(type);
+    }
+
+    // This shouldn't happen - in either branch of if stmt above, type should get fetched
+    if (type == nullptr)
+        throw std::runtime_error("Something went wrong with type \"" + typeCtx->getText() + "\"");
+
+    return type;
+}
+
 antlrcpp::Any FunctionScopeVisitor::visitProgram(LatteParser::ProgramContext *ctx) {
     return LatteBaseVisitor::visitProgram(ctx);
 }
@@ -98,10 +166,9 @@ antlrcpp::Any FunctionScopeVisitor::visitBlockStmt(LatteParser::BlockStmtContext
 antlrcpp::Any FunctionScopeVisitor::visitDecl(LatteParser::DeclContext *ctx) {
     stmtScopes[ctx] = currentScope;
 
-    std::string declTypeStr = ctx->type_()->getText();
-    Type *declType = globalScope->getTypeRegistry()->getType(declTypeStr);
-    if (declTypeStr == "void" || declType == nullptr) {
-        reportError(ctx, "Undefined type \"" + declTypeStr + "\"");
+    Type *declType = getTypeFromRegistry(ctx->type_(), globalScope->getTypeRegistry());
+    if (declType == globalScope->getTypeRegistry()->getVoidType() || declType == nullptr) {
+        reportError(ctx, "Undefined type \"" + ctx->type_()->getText() + "\"");
         return nullptr;
     }
     currentDeclType = declType;
@@ -134,20 +201,9 @@ antlrcpp::Any FunctionScopeVisitor::visitAss(LatteParser::AssContext *ctx) {
         reportError(ctx, e.what());
         return nullptr;
     }
-    if (!(*lhsType == *rhsType)) {
-        ClassType *exprType = dynamic_cast<ClassType *>(rhsType);
-        ClassType *declType = dynamic_cast<ClassType *>(lhsType);
-        if (declType == nullptr || exprType == nullptr)
-            reportError(ctx, "Incompatible declaration expression of type \"" + rhsType->getTypeId() + "\"");
-        else {
-            while (exprType != nullptr && exprType != declType) {
-                exprType = exprType->getParentClass();
-            }
-            if (exprType == nullptr)
-                reportError(ctx, "Assignment of incompatible types - \"" + lhsType->getTypeId() + "\" and \"" + rhsType->getTypeId() + "\"");
-        }
+    if (!isRightCompatibleWithLeft(lhsType, rhsType)) {
+        reportError(ctx, "Assignment of incompatible types - \"" + lhsType->getTypeId() + "\" and \"" + rhsType->getTypeId() + "\"");
     }
-
     return nullptr;
 }
 
@@ -178,8 +234,8 @@ antlrcpp::Any FunctionScopeVisitor::visitClassAss(LatteParser::ClassAssContext *
         reportError(ctx, e.what());
         return nullptr;
     }
-    if (memberType != exprTypes[ctx->expr()[1]]) {
-        reportError(ctx, "Incompatible types for assignment");
+    if (!isRightCompatibleWithLeft(memberType, exprTypes[ctx->expr()[1]])) {
+        reportError(ctx, "Assignment of incompatible types - \"" + memberType->getTypeId() + "\" and \"" + exprTypes[ctx->expr()[1]]->getTypeId() + "\"");
         return nullptr;
     }
     return nullptr;
@@ -227,7 +283,7 @@ antlrcpp::Any FunctionScopeVisitor::visitRet(LatteParser::RetContext *ctx) {
     try {
         visit(ctx->expr());
         Type *exprType = exprTypes[ctx->expr()];
-        if (!(*exprType == *currentFunctionScope->getFunctionType()->getRetType())) {
+        if (!isRightCompatibleWithLeft(currentFunctionScope->getFunctionType()->getRetType(), exprType)) {
             reportError(ctx, "Invalid return expression of type \"" + exprType->getTypeId() + "\"");
         }
     } catch (std::invalid_argument &e) {
@@ -321,18 +377,8 @@ antlrcpp::Any FunctionScopeVisitor::visitItem(LatteParser::ItemContext *ctx) {
         visit(ctx->expr());
         t = exprTypes[ctx->expr()];
     }
-    if (!(*t == *currentDeclType)) {
-        ClassType *exprType = dynamic_cast<ClassType *>(t);
-        ClassType *declType = dynamic_cast<ClassType *>(currentDeclType);
-        if (declType == nullptr || exprType == nullptr)
-            throw std::invalid_argument("Incompatible declaration expression of type \"" + t->getTypeId() + "\"");
-        else {
-            while (exprType != nullptr && exprType != declType) {
-                exprType = exprType->getParentClass();
-            }
-            if (exprType == nullptr)
-                throw std::invalid_argument("Incompatible declaration expression of wrong type");
-        }
+    if (!isRightCompatibleWithLeft(currentDeclType, t)) {
+        reportError(ctx, "Assignment of incompatible types - \"" + currentDeclType->getTypeId() + "\" and \"" + t->getTypeId() + "\"");
     }
     currentScope->declareVariable(varIdStr, t);
     return nullptr;
@@ -367,26 +413,14 @@ antlrcpp::Any FunctionScopeVisitor::visitEFunCall(LatteParser::EFunCallContext *
         args.emplace_back(exprType);
     }
 
-    // Args type comparison with implicit downcasting
     if (args.size() != funType->getArgsType().size())
-        throw std::invalid_argument("Invalid arguments supplied to function \"" + funName + "\"");
+        throw std::invalid_argument("Invalid number of arguments supplied to function \"" + ctx->ID()->getText() + "\"");
     for (size_t i = 0; i < args.size(); i++) {
-        ClassType *argT = dynamic_cast<ClassType *>(args[i]);
-        ClassType *funArgT = dynamic_cast<ClassType *>(funType->getArgsType()[i]);
-        if (argT != nullptr) {
-            if (funArgT == nullptr)
-                throw std::invalid_argument("Invalid arguments supplied to function \"" + funName + "\"");
-            while (argT != nullptr && argT != funArgT) {
-                argT = argT->getParentClass();
-            }
-            if (argT == nullptr)
-                throw std::invalid_argument("Invalid arguments supplied to function \"" + funName + "\"");
-        } else {
-            if (args[i] != funType->getArgsType()[i])
-                throw std::invalid_argument("Invalid arguments supplied to function \"" + funName + "\"");
-        }
+        Type *funArgT = funType->getArgsType()[i];
+        Type *argT = args[i];
+        if (!isRightCompatibleWithLeft(funArgT, argT))
+            throw std::invalid_argument("Incompatible arguments supplied to function \"" + ctx->ID()->getText() + "\" expected \"" + funArgT->getTypeId() + "\", got \"" + argT->getTypeId() + "\"");
     }
-
     exprTypes[ctx] = funType->getRetType();
     return nullptr;
 }
@@ -426,6 +460,13 @@ antlrcpp::Any FunctionScopeVisitor::visitERelOp(LatteParser::ERelOpContext *ctx)
 antlrcpp::Any FunctionScopeVisitor::visitEClassField(LatteParser::EClassFieldContext *ctx) {
     Type *t = nullptr;
     visit(ctx->expr());
+    ArrayType *arrExprType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()]);
+    if (arrExprType != nullptr) {
+        if (ctx->ID()->getText() != "length")
+            throw std::invalid_argument("Attribute \"" + ctx->ID()->getText() + "\" is undefined for arrays");
+        exprTypes[ctx] = globalScope->getTypeRegistry()->getIntType();
+        return nullptr;
+    }
     ClassType *exprType = dynamic_cast<ClassType *>(exprTypes[ctx->expr()]);
     if (exprType == nullptr)
         throw std::invalid_argument("Expected class type for \".\" expression");
@@ -561,27 +602,77 @@ antlrcpp::Any FunctionScopeVisitor::visitEClassFun(LatteParser::EClassFunContext
     if (ft == nullptr)
         throw std::invalid_argument("\"" + ctx->ID()->getText() + "\" is not a class member function");
 
-    // Args type comparison with implicit downcasting
     if (argTypes.size() != ft->getArgsType().size())
-        throw std::invalid_argument("Invalid arguments supplied to function \"" + ctx->ID()->getText() + "\"");
+        throw std::invalid_argument("Invalid number of arguments supplied to function \"" + ctx->ID()->getText() + "\"");
     for (size_t i = 0; i < argTypes.size(); i++) {
-        ClassType *argT = dynamic_cast<ClassType *>(argTypes[i]);
-        ClassType *funArgT = dynamic_cast<ClassType *>(ft->getArgsType()[i]);
-        if (argT != nullptr) {
-            if (funArgT == nullptr)
-                throw std::invalid_argument("Invalid arguments supplied to function \"" + ctx->ID()->getText() + "\"");
-            while (argT != nullptr && argT != funArgT) {
-                argT = argT->getParentClass();
-            }
-            if (argT == nullptr)
-                throw std::invalid_argument("Invalid arguments supplied to function \"" + ctx->ID()->getText() + "\"");
-        } else {
-            if (argTypes[i] != ft->getArgsType()[i])
-                throw std::invalid_argument("Invalid arguments supplied to function \"" + ctx->ID()->getText() + "\"");
-        }
+        Type *funArgT = ft->getArgsType()[i];
+        Type *argT = argTypes[i];
+        if (!isRightCompatibleWithLeft(funArgT, argT))
+            throw std::invalid_argument("Incompatible arguments supplied to function \"" + ctx->ID()->getText() + "\" expected \"" + funArgT->getTypeId() + "\", got \"" + argT->getTypeId() + "\"");
     }
 
     exprTypes[ctx] = ft->getRetType();
+    return nullptr;
+}
+
+antlrcpp::Any FunctionScopeVisitor::visitArrAss(LatteParser::ArrAssContext *ctx) {
+    try {
+        visit(ctx->expr()[0]);
+        visit(ctx->expr()[1]);
+        visit(ctx->expr()[2]);
+        ArrayType *arrayType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()[0]]);
+        IntType *idxType = dynamic_cast<IntType *>(exprTypes[ctx->expr()[1]]);
+        Type *elemType = exprTypes[ctx->expr()[2]];
+
+        if (arrayType == nullptr)
+            throw std::invalid_argument("Expected array type in array assignment");
+        if (idxType == nullptr)
+            throw std::invalid_argument("Expected \"int\" type as array index");
+        if (!isRightCompatibleWithLeft(arrayType->getElemType(), elemType))
+            throw std::invalid_argument("Assignment of incompatible types - \"" + arrayType->getElemType()->getTypeId() + "\" and \"" + elemType->getTypeId() + "\"");
+    } catch (std::invalid_argument &e) {
+        reportError(ctx, e.what());
+    }
+    return nullptr;
+}
+
+antlrcpp::Any FunctionScopeVisitor::visitForArr(LatteParser::ForArrContext *ctx) {
+    try {
+        visit(ctx->expr());
+        ArrayType *arrayType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()]);
+        if (arrayType == nullptr)
+            throw std::invalid_argument("Expected array expression in for loop");
+        Type *elemDeclared = getTypeFromRegistry(ctx->type_(), globalScope->getTypeRegistry());
+        if (!isRightCompatibleWithLeft(arrayType->getElemType(), elemDeclared))
+            throw std::invalid_argument("Declared type incompatible with array element type");
+        Scope *oldScope = currentScope;
+        currentScope = scopeReg->getNewBlockScope(globalScope->getContext(), globalScope->getTypeRegistry(), oldScope);
+        currentScope->declareVariable(ctx->ID()->getText(), elemDeclared);
+        visit(ctx->stmt());
+        currentScope = oldScope;
+    } catch (std::invalid_argument &e) {
+        reportError(ctx, e.what());
+    }
+    return nullptr;
+}
+
+antlrcpp::Any FunctionScopeVisitor::visitENewArr(LatteParser::ENewArrContext *ctx) {
+    visit(ctx->expr());
+    if (exprTypes[ctx->expr()] != globalScope->getTypeRegistry()->getIntType())
+        throw std::invalid_argument("Expected \"int\" type expression in new[] expression");
+    exprTypes[ctx] = getTypeFromRegistry(ctx->type_(), globalScope->getTypeRegistry(), true);
+    return nullptr;
+}
+
+antlrcpp::Any FunctionScopeVisitor::visitEArrIdx(LatteParser::EArrIdxContext *ctx) {
+    visit(ctx->expr()[1]);
+    if (exprTypes[ctx->expr()[1]] != globalScope->getTypeRegistry()->getIntType())
+        throw std::invalid_argument("Expected \"int\" type expression in array indexing expression");
+    visit(ctx->expr()[0]);
+    ArrayType *arrayType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()[0]]);
+    if (arrayType == nullptr)
+        throw std::invalid_argument("Expected array type expression in array indexing expression");
+    exprTypes[ctx] = arrayType->getElemType();
     return nullptr;
 }
 

@@ -33,6 +33,8 @@ private:
     Scope *currentScope = nullptr;
 
     void reportError(antlr4::ParserRuleContext *ctx, std::string msg);
+    Type *getTypeFromRegistry(LatteParser::Type_Context *typeCtx, TypeRegistry *reg, bool wrapInArr = false);
+    bool isRightCompatibleWithLeft(Type *lhs, Type *rhs);
 
 public:
     FunctionScopeVisitor(GlobalScope *gs, ScopeRegistry *sr) : globalScope(gs), scopeReg(sr) { }
@@ -122,6 +124,16 @@ public:
     antlrcpp::Any visitEAddOp(LatteParser::EAddOpContext *ctx) override;
 
     antlrcpp::Any visitEClassFun(LatteParser::EClassFunContext *ctx) override;
+
+    antlrcpp::Any visitArrAss(LatteParser::ArrAssContext *ctx) override;
+
+    antlrcpp::Any visitForArr(LatteParser::ForArrContext *ctx) override;
+
+    antlrcpp::Any visitArrType(LatteParser::ArrTypeContext *ctx) override;
+
+    antlrcpp::Any visitENewArr(LatteParser::ENewArrContext *ctx) override;
+
+    antlrcpp::Any visitEArrIdx(LatteParser::EArrIdxContext *ctx) override;
 };
 
 

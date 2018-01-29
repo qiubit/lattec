@@ -65,6 +65,7 @@ item
 expr
     : expr '.' ID                                  # EClassField
     | expr '.' ID '(' ( expr ( ',' expr )* )? ')'  # EClassFun
+    | expr '[' expr ']'               # EArrIdx
     | ('-'|'!') expr                      # EUnOp
     | expr mulOp expr                     # EMulOp
     | expr addOp expr                     # EAddOp
@@ -80,7 +81,6 @@ expr
     | '(' expr ')'                  # EParen
     | 'new' ID  # EClassDef
     | 'new' type_ '[' expr ']'      # ENewArr
-    | ID '[' expr ']'               # EArrIdx
     | '(' ID ')' 'null' # ETypedNull
     ;
 

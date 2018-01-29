@@ -119,6 +119,14 @@ public:
     antlrcpp::Any visitEAddOp(LatteParser::EAddOpContext *ctx) override;
 
     antlrcpp::Any visitEClassFun(LatteParser::EClassFunContext *ctx) override;
+
+    antlrcpp::Any visitArrAss(LatteParser::ArrAssContext *ctx) override;
+
+    antlrcpp::Any visitForArr(LatteParser::ForArrContext *ctx) override;
+
+    antlrcpp::Any visitENewArr(LatteParser::ENewArrContext *ctx) override;
+
+    antlrcpp::Any visitEArrIdx(LatteParser::EArrIdxContext *ctx) override;
 };
 
 

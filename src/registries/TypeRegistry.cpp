@@ -80,7 +80,7 @@ ArrayType *TypeRegistry::getArrayType(Type *elemType) {
         delete newArrayType;
         return dynamic_cast<ArrayType *>(toRet);
     } else {
-        registeredNamedTypes[newArrayTypeStr] = std::unique_ptr<Type>(std::move(newArrayType));
+        registeredNamedTypes[newArrayTypeStr] = std::unique_ptr<Type>(newArrayType);
         return dynamic_cast<ArrayType *>(registeredNamedTypes[newArrayTypeStr].get());
     }
 }

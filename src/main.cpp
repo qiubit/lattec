@@ -30,6 +30,7 @@
 #include "operations/IntModOp.h"
 #include "visitors/FunctionScopeVisitor.h"
 #include "visitors/CodegenVisitor.h"
+#include "types/ArrayType.h"
 
 int main() {
     TypeRegistry registry;
@@ -203,8 +204,6 @@ int main() {
     auto sizeInt = ctx.getBuilder()->CreatePtrToInt(size, registry.getIntType()->getLlvmType(&ctx));
     auto getSize = ctx.getBuilder()->CreateCall(globalScope.getSymbolIdEnvEntry("malloc")->getEntryFunction(), sizeInt);
      */
-    auto testClass = dynamic_cast<ClassType *>(registry.getType("Test"));
-    auto testClass2 = dynamic_cast<ClassType *>(registry.getType("Test2"));
     //auto newOp = NewOp(&ctx, globalScope.getIdEnv(), testClass2);
     /*
     auto oneVal = ctx.getBuilder()->getInt1(true);
@@ -219,7 +218,23 @@ int main() {
     auto modOp = IntModOp(&ctx, &registry, oneVal, oneVal);
     ctx.getBuilder()->CreateRet(newOp.getOpVal());
      */
+/*
+    llvm::Function *main = ctx.getModule()->getFunction("main");
+    llvm::BasicBlock *BB = &main->getBasicBlockList().back();
+    llvm::Instruction *before = &BB->getInstList().back();
+    ctx.getBuilder()->SetInsertPoint(before);
+    ArrayType *at = registry.getArrayType(registry.getIntType());
+    auto arrPtr = at->allocateArray(&ctx, ctx.getBuilder()->getInt32(42));
+    auto len = at->getLength(&ctx, arrPtr);
+    llvm::Function *printInt = ctx.getModule()->getFunction("printInt");
 
+
+    auto elemPtr = at->getElemPtr(&ctx, arrPtr, ctx.getBuilder()->getInt32(4));
+    ctx.getBuilder()->CreateStore(ctx.getBuilder()->getInt32(43), elemPtr);
+    auto elem = at->getElem(&ctx, arrPtr, ctx.getBuilder()->getInt32(4));
+    ctx.getBuilder()->CreateCall(printInt, len);
+    ctx.getBuilder()->CreateCall(printInt, elem);
+*/
     std::cerr << "OK" << std::endl;
 
     // globalScope.declareFunction("malloc", std::vector<const std::string>{"size"}, registry.getBytePtrType(), std::vector<Type *>{registry.getIntType()});

@@ -618,3 +618,19 @@ antlrcpp::Any CodegenVisitor::visitEClassFun(LatteParser::EClassFunContext *ctx)
 
     return LatteBaseVisitor::visitEClassFun(ctx);
 }
+
+antlrcpp::Any CodegenVisitor::visitArrAss(LatteParser::ArrAssContext *ctx) {
+    throw std::runtime_error("not implemented");
+}
+
+antlrcpp::Any CodegenVisitor::visitForArr(LatteParser::ForArrContext *ctx) {
+    throw std::runtime_error("not implemented");
+}
+
+antlrcpp::Any CodegenVisitor::visitENewArr(LatteParser::ENewArrContext *ctx) {
+    throw std::runtime_error("not implemented");
+}
+
+antlrcpp::Any CodegenVisitor::visitEArrIdx(LatteParser::EArrIdxContext *ctx) {
+    throw std::runtime_error("not implemented");
+}

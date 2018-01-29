@@ -27,9 +27,9 @@ private:
     std::vector<std::string> errors;
 
     void reportError(antlr4::ParserRuleContext *ctx, std::string msg);
-    Type *getTypeFromRegistry(antlr4::ParserRuleContext *parsingCtx, const std::string &typeId, TypeRegistry *reg);
+    Type *getTypeFromRegistry(antlr4::ParserRuleContext *parsingCtx, LatteParser::Type_Context *typeCtx, TypeRegistry *reg);
 public:
-    GlobalScopeVisitor(GlobalScope *globalScope) : globalScope(globalScope) { }
+    explicit GlobalScopeVisitor(GlobalScope *globalScope) : globalScope(globalScope) { }
 
     antlrcpp::Any visitFuncDef(LatteParser::FuncDefContext *ctx) override;
 

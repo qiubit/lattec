@@ -16,6 +16,7 @@ public:
     ArrayType(Type *elemType);
 
     bool isArray() const override { return true; }
+    Type *getElemType() { return elemType; }
     llvm::Type* getLlvmType(Context *ctx) override;
 
     llvm::Value *getElem(Context *ctx, llvm::Value *arrayPtr, llvm::Value *idx);

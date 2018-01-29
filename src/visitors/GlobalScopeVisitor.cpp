@@ -5,8 +5,21 @@
 #include "GlobalScopeVisitor.h"
 
 // Fetch appropriate type from TypeRegistry
-Type *GlobalScopeVisitor::getTypeFromRegistry(antlr4::ParserRuleContext *parsingCtx, const std::string &typeId, TypeRegistry *reg) {
+Type *GlobalScopeVisitor::getTypeFromRegistry(antlr4::ParserRuleContext *parsingCtx, LatteParser::Type_Context *typeCtx, TypeRegistry *reg) {
     Type *type = nullptr;
+    std::string typeId = typeCtx->getText();
+
+    // Check if array, if yes - if one-dimensional
+    LatteParser::ArrTypeContext *arrTypeCtx = dynamic_cast<LatteParser::ArrTypeContext *>(typeCtx);
+    if (arrTypeCtx != nullptr) {
+        LatteParser::ArrTypeContext *sndArrType = dynamic_cast<LatteParser::ArrTypeContext *>(arrTypeCtx->type_());
+        if (sndArrType != nullptr) {
+            reportError(parsingCtx, "Multidimensional arrays not supported, abandoning compile");
+            return reg->getVoidType();
+        }
+        typeId = arrTypeCtx->type_()->getText();
+    }
+
 
     // If type is not present, we forward reference it as a class (currently only class is named type)
     if (!reg->typeExits(typeId)) {
@@ -15,6 +28,11 @@ Type *GlobalScopeVisitor::getTypeFromRegistry(antlr4::ParserRuleContext *parsing
     // Otherwise, we fetch it straight from TypeRegistry
     else {
         type = reg->getType(typeId);
+    }
+
+    // Finally, if we were processing "inside-array" type, wrap it into array again
+    if (arrTypeCtx != nullptr) {
+        type = reg->getArrayType(type);
     }
 
     // This shouldn't happen - in either branch of if stmt above, type should get fetched
@@ -31,8 +49,7 @@ antlrcpp::Any GlobalScopeVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx)
     std::string funName = ctx->ID()->getText();
 
     // Fetch function return type
-    std::string retTypeStr = ctx->type_()->getText();
-    Type *returnType = getTypeFromRegistry(ctx, retTypeStr, reg);
+    Type *returnType = getTypeFromRegistry(ctx, ctx->type_(), reg);
 
     // Fetch function arguments type
     std::vector<Type *> argsType;
@@ -43,7 +60,7 @@ antlrcpp::Any GlobalScopeVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx)
     // Fills argsType vector
     if (ctx->arg()) {
         for (auto argTypeCtx : ctx->arg()->type_()) {
-            Type *argType = getTypeFromRegistry(ctx, argTypeCtx->getText(), reg);
+            Type *argType = getTypeFromRegistry(ctx, argTypeCtx, reg);
             if (argType == reg->getVoidType()) {
                 reportError(ctx, "Invalid function argument of type \"void\"");
                 return nullptr;
@@ -120,7 +137,7 @@ antlrcpp::Any GlobalScopeVisitor::visitClassFunDef(LatteParser::ClassFunDefConte
 antlrcpp::Any GlobalScopeVisitor::visitClassVarDef(LatteParser::ClassVarDefContext *ctx) {
     // Visits class member variable definition - this adds appropriate member metadata to corresponding ClassType
     TypeRegistry *reg = globalScope->getTypeRegistry();
-    Type *declType = getTypeFromRegistry(ctx, ctx->type_()->getText(), reg);
+    Type *declType = getTypeFromRegistry(ctx, ctx->type_(), reg);
     if (declType == nullptr)
         return nullptr;
     if (declType == reg->getVoidType()) {
