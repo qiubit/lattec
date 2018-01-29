@@ -17,6 +17,7 @@
 #include "../types/BytePtrType.h"
 #include "../types/VoidType.h"
 #include "../types/StringType.h"
+#include "../types/ArrayType.h"
 
 class TypeRegistry {
 private:
@@ -35,6 +36,7 @@ public:
     BooleanType *getBooleanType();
     VoidType *getVoidType();
     StringType *getStringType();
+    ArrayType *getArrayType(Type *elemType);
     std::vector<std::pair<std::string, Type *>> getNamedTypes();
     bool typeExits(const std::string &typeId);
 };

@@ -3,6 +3,7 @@
 //
 
 #include "TypeRegistry.h"
+#include "../types/ArrayType.h"
 
 TypeRegistry::TypeRegistry() {
     this->registeredNamedTypes[Type::INT_TYPE_ID] = std::make_unique<IntType>();
@@ -71,3 +72,15 @@ bool TypeRegistry::typeExits(const std::string &typeId) {
     return registeredNamedTypes.find(typeId) != registeredNamedTypes.end();
 }
 
+ArrayType *TypeRegistry::getArrayType(Type *elemType) {
+    ArrayType *newArrayType = new ArrayType(elemType);
+    std::string newArrayTypeStr = newArrayType->getTypeId();
+    if (this->registeredNamedTypes.find(newArrayTypeStr) != this->registeredNamedTypes.end()) {
+        Type *toRet = registeredNamedTypes[newArrayTypeStr].get();
+        delete newArrayType;
+        return dynamic_cast<ArrayType *>(toRet);
+    } else {
+        registeredNamedTypes[newArrayTypeStr] = std::unique_ptr<Type>(std::move(newArrayType));
+        return dynamic_cast<ArrayType *>(registeredNamedTypes[newArrayTypeStr].get());
+    }
+}
