@@ -24,14 +24,19 @@ private:
     GlobalScope *globalScope;
     std::string visitedClass = "";
     std::vector<std::string> errors;
+    ScopeRegistry *scopeReg;
+    llvm::Instruction *currentEntryBr = nullptr;
+    std::string currentDeclType = "";
 
     void reportError(antlr4::ParserRuleContext *ctx, std::string msg);
 
 public:
     CodegenVisitor(Context *codegenCtx, TypeRegistry *reg, GlobalScope *globalScope,
                    std::unordered_map<LatteParser::ExprContext *, Type *> exprTypes,
-                   std::unordered_map<LatteParser::StmtContext *, Scope *> stmtScopes)
-            : codegenCtx(codegenCtx), reg(reg), globalScope(globalScope), exprTypes(exprTypes), stmtScopes(stmtScopes) { }
+                   std::unordered_map<LatteParser::StmtContext *, Scope *> stmtScopes,
+                   ScopeRegistry *scopeReg)
+            : codegenCtx(codegenCtx), reg(reg), globalScope(globalScope),
+              exprTypes(exprTypes), stmtScopes(stmtScopes), scopeReg(scopeReg) { }
 
     std::vector<std::string> getErrors() { return errors; }
 

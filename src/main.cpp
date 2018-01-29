@@ -170,7 +170,8 @@ int main() {
     }
 
     CodegenVisitor codegenVisitor{
-            &ctx, &registry, &globalScope, functionScopeVisitor.getExprTypes(), functionScopeVisitor.getStmtScopes()
+            &ctx, &registry, &globalScope, functionScopeVisitor.getExprTypes(),
+            functionScopeVisitor.getStmtScopes(), &scopeReg
     };
     codegenVisitor.visit(tree);
 

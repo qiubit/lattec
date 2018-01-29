@@ -281,7 +281,6 @@ antlrcpp::Any FunctionScopeVisitor::visitItem(LatteParser::ItemContext *ctx) {
         throw std::invalid_argument("Incompatible declaration expression of type \"" + t->getTypeId() + "\"");
     }
     currentScope->declareVariable(varIdStr, t);
-    currentScope->getSymbolIdEnvEntry(varIdStr)->setEntryAlloca(globalScope->getContext()->getBuilder()->CreateAlloca(t->getLlvmType(globalScope->getContext())));
     return nullptr;
 }
 

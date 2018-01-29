@@ -25,6 +25,7 @@
 #include "../operations/BooleanNeqOp.h"
 #include "../operations/PtrEqOp.h"
 #include "../operations/PtrNeqOp.h"
+#include "../operations/ConstIntOp.h"
 
 
 void CodegenVisitor::reportError(antlr4::ParserRuleContext *ctx, std::string msg) {
@@ -47,14 +48,23 @@ antlrcpp::Any CodegenVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx) {
         envEntry = globalScope->getSymbolIdEnvEntry(ctx->ID()->getText());
     else
         envEntry = globalScope->getSymbolIdEnvEntry(visitedClass + "." + ctx->ID()->getText());
+    FunctionScope *functionScope;
+    if (visitedClass.empty())
+        functionScope = globalScope->getFunctionScope(ctx->ID()->getText());
+    else
+        functionScope = globalScope->getFunctionScope(visitedClass + "." + ctx->ID()->getText());
     llvm::Function *currentFunction = envEntry->getEntryFunction();
     codegenCtx->getBuilder()->SetInsertPoint(&currentFunction->getEntryBlock());
 
     llvm::BasicBlock *afterEntryBB = llvm::BasicBlock::Create(*codegenCtx->getContext(), "", currentFunction);
-    codegenCtx->getBuilder()->CreateBr(afterEntryBB);
+    currentEntryBr = codegenCtx->getBuilder()->CreateBr(afterEntryBB);
     blockTerminated[&currentFunction->getEntryBlock()] = true;
     blockTerminated[afterEntryBB] = false;
     codegenCtx->getBuilder()->SetInsertPoint(afterEntryBB);
+
+    Scope *oldScope = currentScope;
+    BlockScope *newScope = scopeReg->getNewBlockScope(codegenCtx, reg, functionScope);
+    currentScope = newScope;
 
     visitChildren(ctx);
 
@@ -70,6 +80,9 @@ antlrcpp::Any CodegenVisitor::visitFuncDef(LatteParser::FuncDefContext *ctx) {
             }
         }
     }
+
+    currentScope = oldScope;
+    currentEntryBr = nullptr;
 
     return nullptr;
 }
@@ -110,26 +123,26 @@ antlrcpp::Any CodegenVisitor::visitEmpty(LatteParser::EmptyContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitBlockStmt(LatteParser::BlockStmtContext *ctx) {
-    currentScope = stmtScopes[ctx];
+    Scope *oldScope = currentScope;
+    BlockScope *newScope = scopeReg->getNewBlockScope(codegenCtx, reg, oldScope);
+    currentScope = newScope;
 
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()])
         visitChildren(ctx);
 
+    currentScope = oldScope;
     return nullptr;
 }
 
 antlrcpp::Any CodegenVisitor::visitDecl(LatteParser::DeclContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
+    currentDeclType = ctx->type_()->getText();
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()])
         visitChildren(ctx);
-
+    currentDeclType = "";
     return nullptr;
 }
 
 antlrcpp::Any CodegenVisitor::visitAss(LatteParser::AssContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         visit(ctx->expr());
         auto varLoc = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText())->getEntryAlloca();
@@ -139,8 +152,6 @@ antlrcpp::Any CodegenVisitor::visitAss(LatteParser::AssContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitIncr(LatteParser::IncrContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         auto varLoc = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText())->getEntryAlloca();
         auto preIncr = codegenCtx->getBuilder()->CreateLoad(varLoc);
@@ -151,8 +162,6 @@ antlrcpp::Any CodegenVisitor::visitIncr(LatteParser::IncrContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitDecr(LatteParser::DecrContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         auto varLoc = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText())->getEntryAlloca();
         auto preDecr = codegenCtx->getBuilder()->CreateLoad(varLoc);
@@ -163,8 +172,6 @@ antlrcpp::Any CodegenVisitor::visitDecr(LatteParser::DecrContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitRet(LatteParser::RetContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         visit(ctx->expr());
         codegenCtx->getBuilder()->CreateRet(exprValues[ctx->expr()]);
@@ -174,8 +181,6 @@ antlrcpp::Any CodegenVisitor::visitRet(LatteParser::RetContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitVRet(LatteParser::VRetContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         codegenCtx->getBuilder()->CreateRetVoid();
         blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()] = true;
@@ -184,8 +189,6 @@ antlrcpp::Any CodegenVisitor::visitVRet(LatteParser::VRetContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitCond(LatteParser::CondContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         if (ctx->expr()->getText() == "true") {
             visit(ctx->stmt());
@@ -220,8 +223,6 @@ antlrcpp::Any CodegenVisitor::visitCond(LatteParser::CondContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitCondElse(LatteParser::CondElseContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         if (ctx->expr()->getText() == "true") {
             visit(ctx->stmt()[0]);
@@ -276,8 +277,6 @@ antlrcpp::Any CodegenVisitor::visitCondElse(LatteParser::CondElseContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitWhile(LatteParser::WhileContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         llvm::BasicBlock *condBB =
                 llvm::BasicBlock::Create(*codegenCtx->getContext(), "whileCond",
@@ -316,19 +315,35 @@ antlrcpp::Any CodegenVisitor::visitWhile(LatteParser::WhileContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitSExp(LatteParser::SExpContext *ctx) {
-    currentScope = stmtScopes[ctx];
-
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()])
         visit(ctx->expr());
     return nullptr;
 }
 
 antlrcpp::Any CodegenVisitor::visitItem(LatteParser::ItemContext *ctx) {
-    auto varLoc = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText())->getEntryAlloca();
-    if (ctx->expr()) {
+    if (ctx->expr() != nullptr)
         visit(ctx->expr());
-        codegenCtx->getBuilder()->CreateStore(exprValues[ctx->expr()], varLoc);
+
+    Type *itemType = reg->getType(currentDeclType);
+    currentScope->declareVariable(ctx->ID()->getText(), itemType);
+    IdEnvEntry *entry = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText());
+    auto varAlloca = codegenCtx->getBuilder()->CreateAlloca(itemType->getLlvmType(codegenCtx));
+    if (ctx->expr() != nullptr)
+        codegenCtx->getBuilder()->CreateStore(exprValues[ctx->expr()], varAlloca);
+    entry->setEntryAlloca(varAlloca);
+
+    if (ctx->expr() == nullptr) {
+        if (currentDeclType == "string") {
+            codegenCtx->getBuilder()->CreateStore(ConstStringOp(codegenCtx, reg, "").getOpVal(), varAlloca);
+        } else if (currentDeclType == "boolean") {
+            codegenCtx->getBuilder()->CreateStore(ConstBooleanOp(codegenCtx, reg, false).getOpVal(), varAlloca);
+        } else if (currentDeclType == "int") {
+            codegenCtx->getBuilder()->CreateStore(ConstIntOp(codegenCtx, reg, 0).getOpVal(), varAlloca);
+        } else {
+            codegenCtx->getBuilder()->CreateStore(llvm::ConstantPointerNull::get(reg->getBytePtrType()->getLlvmType(codegenCtx)), varAlloca);
+        }
     }
+
     return nullptr;
 }
 
@@ -530,7 +545,7 @@ antlrcpp::Any CodegenVisitor::visitEAnd(LatteParser::EAndContext *ctx) {
     finalVal->addIncoming(lVal, firstAndBB);
     finalVal->addIncoming(rVal, lastAndBB);
 
-    exprValues[ctx] = lVal;
+    exprValues[ctx] = finalVal;
 
     return nullptr;
 }
