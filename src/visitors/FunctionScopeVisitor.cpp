@@ -44,9 +44,6 @@ antlrcpp::Any FunctionScopeVisitor::visitFuncDef(LatteParser::FuncDefContext *ct
     currentScope = scopeReg->getNewBlockScope(globalScope->getContext(), globalScope->getTypeRegistry(), fs);
     visitChildren(ctx);
 
-    BB = llvm::BasicBlock::Create(*globalScope->getContext()->getContext(), "", f);
-    globalScope->getContext()->getBuilder()->CreateBr(BB);
-    globalScope->getContext()->getBuilder()->SetInsertPoint(BB);
     currentScope = nullptr;
     currentFunctionScope = nullptr;
 
@@ -99,6 +96,8 @@ antlrcpp::Any FunctionScopeVisitor::visitBlockStmt(LatteParser::BlockStmtContext
 }
 
 antlrcpp::Any FunctionScopeVisitor::visitDecl(LatteParser::DeclContext *ctx) {
+    stmtScopes[ctx] = currentScope;
+
     std::string declTypeStr = ctx->type_()->getText();
     Type *declType = globalScope->getTypeRegistry()->getType(declTypeStr);
     if (declTypeStr == "void" || declType == nullptr) {
@@ -282,6 +281,7 @@ antlrcpp::Any FunctionScopeVisitor::visitItem(LatteParser::ItemContext *ctx) {
         throw std::invalid_argument("Incompatible declaration expression of type \"" + t->getTypeId() + "\"");
     }
     currentScope->declareVariable(varIdStr, t);
+    currentScope->getSymbolIdEnvEntry(varIdStr)->setEntryAlloca(globalScope->getContext()->getBuilder()->CreateAlloca(t->getLlvmType(globalScope->getContext())));
     return nullptr;
 }
 
@@ -336,7 +336,7 @@ antlrcpp::Any FunctionScopeVisitor::visitERelOp(LatteParser::ERelOpContext *ctx)
         throw std::invalid_argument("Incompatible types supplied to boolean op \"" + ctx->relOp()->getText() + "\": \"" + lhsType->getTypeId() + "\" and \"" + rhsType->getTypeId() + "\"");
     }
     if (ctx->relOp()->getText() == "==" || ctx->relOp()->getText() == "!=") {
-        t = lhsType;
+        t = globalScope->getTypeRegistry()->getBooleanType();
     }
     // Except from comparison, relOps supported only for ints
     else if (lhsType != globalScope->getTypeRegistry()->getIntType()) {

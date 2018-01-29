@@ -9,7 +9,7 @@
 #include "Op.h"
 #include "../registries/TypeRegistry.h"
 
-class BooleanEqOp : Op {
+class BooleanEqOp : public Op {
 private:
     static llvm::Value *compareBooleans(Context *ctx, llvm::Value *lBool, llvm::Value *rBool);
 

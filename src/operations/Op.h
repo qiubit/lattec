@@ -15,7 +15,7 @@ private:
 public:
     Op(Type *opType, llvm::Value *opVal) : opType(opType), opVal(opVal) { }
     Type *getOpType() { return opType; }
-    llvm::Value *getOpVal() { return opVal; }
+    virtual llvm::Value *getOpVal() { return opVal; }
 };
 
 

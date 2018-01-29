@@ -29,6 +29,7 @@
 #include "operations/StringAddOp.h"
 #include "operations/IntModOp.h"
 #include "visitors/FunctionScopeVisitor.h"
+#include "visitors/CodegenVisitor.h"
 
 int main() {
     TypeRegistry registry;
@@ -163,6 +164,20 @@ int main() {
     if (functionScopeVisitorErrors.size() > 0) {
         std::cerr << "ERROR" << std::endl;
         for (std::string &s : functionScopeVisitorErrors) {
+            std::cerr << s << std::endl;
+        }
+        return 1;
+    }
+
+    CodegenVisitor codegenVisitor{
+            &ctx, &registry, &globalScope, functionScopeVisitor.getExprTypes(), functionScopeVisitor.getStmtScopes()
+    };
+    codegenVisitor.visit(tree);
+
+    auto codegenVisitorErrors = codegenVisitor.getErrors();
+    if (codegenVisitorErrors.size() > 0) {
+        std::cerr << "ERROR" << std::endl;
+        for (std::string &s : codegenVisitorErrors) {
             std::cerr << s << std::endl;
         }
         return 1;

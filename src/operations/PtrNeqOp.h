@@ -9,7 +9,7 @@
 #include "Op.h"
 #include "../registries/TypeRegistry.h"
 
-class PtrNeqOp : Op {
+class PtrNeqOp : public Op {
 private:
     static llvm::Value *comparePointers(Context *ctx, llvm::Value *lPtr, llvm::Value *rPtr);
 
