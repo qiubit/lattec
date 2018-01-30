@@ -428,6 +428,12 @@ antlrcpp::Any CodegenVisitor::visitERelOp(LatteParser::ERelOpContext *ctx) {
 
 antlrcpp::Any CodegenVisitor::visitEClassField(LatteParser::EClassFieldContext *ctx) {
     visit(ctx->expr());
+    ArrayType *arrayExprType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()]);
+    if (arrayExprType != nullptr) {
+        // TODO: Only length attribute supported for now, this will when started to support more
+        exprValues[ctx] = arrayExprType->getLength(codegenCtx, exprValues[ctx->expr()]);
+        return nullptr;
+    }
     ClassType *exprType = dynamic_cast<ClassType *>(exprTypes[ctx->expr()]);
     exprValues[ctx] = ClassVarOp(codegenCtx, exprType, exprValues[ctx->expr()], ctx->ID()->getText()).getOpVal();
     return nullptr;
@@ -620,17 +626,98 @@ antlrcpp::Any CodegenVisitor::visitEClassFun(LatteParser::EClassFunContext *ctx)
 }
 
 antlrcpp::Any CodegenVisitor::visitArrAss(LatteParser::ArrAssContext *ctx) {
-    throw std::runtime_error("not implemented");
+    if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
+        visit(ctx->expr()[0]);
+        visit(ctx->expr()[1]);
+        visit(ctx->expr()[2]);
+        llvm::Value *arrayPtr = exprValues[ctx->expr()[0]];
+        llvm::Value *arrayIdx = exprValues[ctx->expr()[1]];
+        llvm::Value *memberVal = exprValues[ctx->expr()[2]];
+
+        ArrayType *arrayType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()[0]]);
+        assert(arrayType != nullptr);
+        auto memberPtr = arrayType->getElemPtr(codegenCtx, arrayPtr, arrayIdx);
+        codegenCtx->getBuilder()->CreateStore(memberVal, memberPtr);
+    }
+    return nullptr;
 }
 
 antlrcpp::Any CodegenVisitor::visitForArr(LatteParser::ForArrContext *ctx) {
-    throw std::runtime_error("not implemented");
+    if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
+        visit(ctx->expr());
+        ArrayType *arrayType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()]);
+        assert(arrayType != nullptr);
+        llvm::Function *fun = codegenCtx->getBuilder()->GetInsertBlock()->getParent();
+
+        llvm::BasicBlock *currentBB = codegenCtx->getBuilder()->GetInsertBlock();
+        llvm::BasicBlock *forCondBB = llvm::BasicBlock::Create(*codegenCtx->getContext(), "forCond", fun);
+        llvm::BasicBlock *forCondContBB = llvm::BasicBlock::Create(*codegenCtx->getContext(), "forCondCont", fun);
+        llvm::BasicBlock *forLoopBB = llvm::BasicBlock::Create(*codegenCtx->getContext(), "forLoop", fun);
+        llvm::BasicBlock *afterForBB = llvm::BasicBlock::Create(*codegenCtx->getContext(), "afterFor", fun);
+        codegenCtx->getBuilder()->CreateBr(forCondBB);
+        blockTerminated[currentBB] = true;
+        blockTerminated[forLoopBB] = false;
+        blockTerminated[afterForBB] = false;
+        codegenCtx->getBuilder()->SetInsertPoint(forCondBB);
+
+        Scope *oldScope = currentScope;
+        BlockScope *newScope = scopeReg->getNewBlockScope(codegenCtx, reg, oldScope);
+        currentScope = newScope;
+
+        currentScope->declareVariable(ctx->ID()->getText(), arrayType->getElemType());
+        IdEnvEntry *envEntry = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText());
+        assert(envEntry != nullptr);
+        codegenCtx->getBuilder()->SetInsertPoint(currentEntryBr);
+        auto tempVarAlloca = codegenCtx->getBuilder()->CreateAlloca(arrayType->getElemType()->getLlvmType(codegenCtx));
+        envEntry->setEntryAlloca(tempVarAlloca);
+        auto idxAlloca = codegenCtx->getBuilder()->CreateAlloca(codegenCtx->getBuilder()->getInt32Ty());
+        codegenCtx->getBuilder()->CreateStore(codegenCtx->getBuilder()->getInt32(0), idxAlloca);
+        codegenCtx->getBuilder()->SetInsertPoint(forCondBB);
+
+        llvm::Value *arrIdx = codegenCtx->getBuilder()->CreateLoad(idxAlloca);
+        llvm::Value *arrLen = arrayType->getLength(codegenCtx, exprValues[ctx->expr()]);
+        llvm::Value *inBounds = codegenCtx->getBuilder()->CreateICmpSLT(arrIdx, arrLen);
+
+        auto idxPlusOne = codegenCtx->getBuilder()->CreateAdd(
+                codegenCtx->getBuilder()->CreateLoad(idxAlloca),
+                codegenCtx->getBuilder()->getInt32(1)
+        );
+        codegenCtx->getBuilder()->CreateStore(idxPlusOne, idxAlloca);
+
+        codegenCtx->getBuilder()->CreateCondBr(inBounds, forCondContBB, afterForBB);
+        codegenCtx->getBuilder()->SetInsertPoint(forCondContBB);
+        blockTerminated[forCondBB] = true;
+
+        llvm::Value *elem = arrayType->getElem(codegenCtx, exprValues[ctx->expr()], arrIdx);
+        codegenCtx->getBuilder()->CreateStore(elem, envEntry->getEntryAlloca());
+        codegenCtx->getBuilder()->CreateBr(forLoopBB);
+        codegenCtx->getBuilder()->SetInsertPoint(forLoopBB);
+        blockTerminated[forCondContBB] = true;
+
+        visit(ctx->stmt());
+        llvm::BasicBlock *stmtBB = codegenCtx->getBuilder()->GetInsertBlock();
+        if (!blockTerminated[stmtBB]) {
+            codegenCtx->getBuilder()->CreateBr(forCondBB);
+            blockTerminated[stmtBB] = true;
+        }
+
+        currentScope = oldScope;
+        codegenCtx->getBuilder()->SetInsertPoint(afterForBB);
+    }
+    return nullptr;
 }
 
 antlrcpp::Any CodegenVisitor::visitENewArr(LatteParser::ENewArrContext *ctx) {
-    throw std::runtime_error("not implemented");
+    visit(ctx->expr());
+    ArrayType *arrayType = dynamic_cast<ArrayType *>(exprTypes[ctx]);
+    exprValues[ctx] = arrayType->allocateArray(codegenCtx, exprValues[ctx->expr()]);
+    return nullptr;
 }
 
 antlrcpp::Any CodegenVisitor::visitEArrIdx(LatteParser::EArrIdxContext *ctx) {
-    throw std::runtime_error("not implemented");
+    visit(ctx->expr()[1]);
+    visit(ctx->expr()[0]);
+    ArrayType *arrayType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()[0]]);
+    exprValues[ctx] = arrayType->getElem(codegenCtx, exprValues[ctx->expr()[0]], exprValues[ctx->expr()[1]]);
+    return nullptr;
 }
