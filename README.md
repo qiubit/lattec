@@ -18,6 +18,8 @@ Implemented features:
 - core Latte LLVM compiler (front-end + back-end)
 - optimizations: dead code elimination (code after returns is not generated)
 - extensions: arrays, objects with virtual functions and inheritance
+- basic garbage collection: strings are initialized with refcount equal to 1,
+    during assignments, reference counts are checked, and objects are freed if they are 0
 
 2. Directory structure
 
