@@ -130,6 +130,7 @@ antlrcpp::Any CodegenVisitor::visitBlockStmt(LatteParser::BlockStmtContext *ctx)
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()])
         visitChildren(ctx);
 
+    currentScope->leaveScope();
     currentScope = oldScope;
     return nullptr;
 }
@@ -197,6 +198,7 @@ antlrcpp::Any CodegenVisitor::visitDecr(LatteParser::DecrContext *ctx) {
 antlrcpp::Any CodegenVisitor::visitRet(LatteParser::RetContext *ctx) {
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         visit(ctx->expr());
+        currentScope->leaveAllScopes();
         codegenCtx->getBuilder()->CreateRet(exprValues[ctx->expr()]);
         blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()] = true;
     }
@@ -205,6 +207,7 @@ antlrcpp::Any CodegenVisitor::visitRet(LatteParser::RetContext *ctx) {
 
 antlrcpp::Any CodegenVisitor::visitVRet(LatteParser::VRetContext *ctx) {
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
+        currentScope->leaveAllScopes();
         codegenCtx->getBuilder()->CreateRetVoid();
         blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()] = true;
     }
@@ -741,6 +744,7 @@ antlrcpp::Any CodegenVisitor::visitForArr(LatteParser::ForArrContext *ctx) {
             blockTerminated[stmtBB] = true;
         }
 
+        currentScope->leaveScope();
         currentScope = oldScope;
         codegenCtx->getBuilder()->SetInsertPoint(afterForBB);
     }

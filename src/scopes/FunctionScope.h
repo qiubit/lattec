@@ -41,6 +41,10 @@ public:
     void setParent(ClassScope *classScope);
     FunctionType *getFunctionType() { return functionType; }
     void declareVariable(const std::string &symbol, Type *t) override;
+
+    void leaveScope() override;
+
+    void leaveAllScopes() override;
 };
 
 

@@ -33,14 +33,14 @@ void derefString(char *s)
     *refCnt -= 1;
     if (*refCnt <= 0) {
       s = (char *) refCnt;
-	      free(s);
-	    }
-	  }
-	}
+      free(s);
+    }
+  }
+}
 
-	void printInt(int x)
-	{
-	  printf("%d\n", x);
+void printInt(int x)
+{
+  printf("%d\n", x);
 }
 
 void printString(const char *s)

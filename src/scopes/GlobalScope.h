@@ -69,6 +69,10 @@ public:
     IdEnv *getIdEnv();
     TypeRegistry *getTypeRegistry();
     Context *getContext();
+
+    void leaveScope() override;
+
+    void leaveAllScopes() override;
 };
 
 
