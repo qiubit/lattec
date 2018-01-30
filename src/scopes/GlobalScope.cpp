@@ -242,3 +242,13 @@ FunctionScope *GlobalScope::getFunctionScope(const std::string &funName) {
 void GlobalScope::declareVariable(const std::string &symbol, Type *t) {
     assert(false && "declareVariable unimplemented");
 }
+
+void GlobalScope::leaveScope() {
+    // Global scope doesn't garbage collect anything
+    return;
+}
+
+void GlobalScope::leaveAllScopes() {
+    // Global scope doesn't garbage collect anything
+    return;
+}

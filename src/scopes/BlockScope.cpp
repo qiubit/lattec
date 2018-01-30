@@ -20,3 +20,24 @@ void BlockScope::declareVariable(const std::string &symbol, Type *t) {
         env.addEnvEntryForId(symbol, t);
     }
 }
+
+void BlockScope::leaveScope() {
+    auto envEntries = env.getEnvEntries();
+    for (auto &it : envEntries) {
+        IdEnvEntry *envEntry = it.second;
+        assert(envEntry != nullptr);
+        if (envEntry->getEntryType() != nullptr && envEntry->getEntryType()->getTypeId() == "string") {
+            if (envEntry->getEntryAlloca() != nullptr) {
+                llvm::Function *derefString = ctx->getModule()->getFunction("derefString");
+                auto strVal = ctx->getBuilder()->CreateLoad(envEntry->getEntryAlloca());
+                ctx->getBuilder()->CreateCall(derefString, strVal);
+            }
+        }
+    }
+}
+
+void BlockScope::leaveAllScopes() {
+    leaveScope();
+    if (parent != nullptr)
+        parent->leaveAllScopes();
+}

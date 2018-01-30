@@ -21,6 +21,10 @@ public:
     BlockScope(Context *ctx, TypeRegistry *reg, Scope *parent) : ctx(ctx), reg(reg), parent(parent) { }
     IdEnvEntry *getSymbolIdEnvEntry(const std::string &symbol) override;
     void declareVariable(const std::string &symbol, Type *t) override;
+
+    void leaveScope() override;
+
+    void leaveAllScopes() override;
 };
 
 

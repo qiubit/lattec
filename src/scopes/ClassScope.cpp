@@ -46,3 +46,13 @@ void ClassScope::defineClassMemberVariable(const std::string &symbol) {
 void ClassScope::declareVariable(const std::string &symbol, Type *t) {
     assert(false && "declareVariable unimplemented");
 }
+
+void ClassScope::leaveScope() {
+    // Class scope doesn't garbage collect anything
+    return;
+}
+
+void ClassScope::leaveAllScopes() {
+    // Class scope doesn't garbage collect anything
+    return;
+}
