@@ -19,61 +19,14 @@
 #include "registries/TypeRegistry.h"
 #include "scopes/GlobalScope.h"
 #include "visitors/GlobalScopeVisitor.h"
-#include "operations/NewOp.h"
-#include "operations/IntNegOp.h"
-#include "operations/BooleanNotOp.h"
-#include "operations/TypedNullOp.h"
-#include "operations/IntDivOp.h"
-#include "operations/ConstStringOp.h"
-#include "operations/ConstIntOp.h"
-#include "operations/StringAddOp.h"
-#include "operations/IntModOp.h"
 #include "visitors/FunctionScopeVisitor.h"
 #include "visitors/CodegenVisitor.h"
-#include "types/ArrayType.h"
 
 int main() {
     TypeRegistry registry;
     ScopeRegistry scopeReg;
     Context ctx;
-/*
-    llvm::FunctionType *FuncTy =
-            llvm::FunctionType::get(llvm::Type::getInt32Ty(*env.getContext()), false);
-    llvm::Function *Func =
-            llvm::Function::Create(FuncTy, llvm::GlobalValue::ExternalLinkage, "main", env.getModule());
-    llvm::BasicBlock *BB =
-            llvm::BasicBlock::Create(*env.getContext(), "", Func);
-    env.getBuilder()->SetInsertPoint(BB);
 
-    auto Type = llvm::Type::getInt32Ty(*env.getContext());
-    std::vector<llvm::Type*> structElts{Type, Type, Type};
-    structElts.push_back(FuncTy);
-    auto StructTy = llvm::StructType::create(*env.getContext(), structElts, "ziomk");
-    auto PtrTy = llvm::PointerType::getInt8PtrTy(*env.getContext());
-    auto val = llvm::ConstantInt::get(llvm::IntegerType::get(*env.getContext(), 32), 42, true);
-
-    auto constStruct = env.getBuilder()->CreateAlloca(StructTy);
-    auto constPtr = env.getBuilder()->CreateAlloca(PtrTy);
-
-    auto properTy = env.getBuilder()->CreateBitCast(constPtr, llvm::PointerType::get(StructTy, 0));
-
-    env.getBuilder()->CreateStore(Func, constPtr);
-
-    env.getBuilder()->CreateStore(constStruct, properTy);
-
-
-    env.getBuilder()->CreateRet(val);
-
-    env.getModule()->print(llvm::outs(), nullptr);
-
-    std::unordered_set<ClassMetadata> s;
-    ClassMetadata h("hello");
-    ClassMetadata w("world");
-    ClassMetadata k("hello");
-
-    s.insert(h);
-    s.insert(w);
-*/
     antlr4::ANTLRInputStream input(std::cin);
     LatteLexer lexer(&input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -126,6 +79,12 @@ int main() {
     globalScope.defineFunction("concatStrings");
     globalScope.declareFunction("strcmp", intType, std::vector<Type *>{stringType, stringType});
     globalScope.defineFunction("strcmp");
+    globalScope.declareFunction("getString", stringType, std::vector<Type *>{stringType});
+    globalScope.defineFunction("getString");
+    globalScope.declareFunction("refString", voidType, std::vector<Type *>{stringType});
+    globalScope.defineFunction("refString");
+    globalScope.declareFunction("derefString", voidType, std::vector<Type *>{stringType});
+    globalScope.defineFunction("derefString");
 
     GlobalScopeVisitor globalScopeVisitor(&globalScope);
     globalScopeVisitor.visit(tree);
@@ -138,16 +97,6 @@ int main() {
         }
         return 1;
     }
-
-/*
-    globalScope.declareFunction("main", registry.getIntType());
-    globalScope.defineFunction("main");
-    auto parT = globalScope.referenceClass("Class");
-    auto classT = globalScope.defineClass("Subclass");
-    globalScope.defineClass("Class");
-    classT->setParentClass(parT);
-    //parT->setParentClass(classT);
-*/
 
     auto errors = globalScope.errorChecks();
     if (errors.size() > 0) {
@@ -185,56 +134,6 @@ int main() {
         return 1;
     }
 
-    // class.in test
-
-    /*
-    llvm::Function *f = globalScope.getSymbolIdEnvEntry("main")->getEntryFunction();
-    llvm::BasicBlock *BB = llvm::BasicBlock::Create(*ctx.getContext(), "entry", f);
-    ctx.getBuilder()->SetInsertPoint(BB);
-     */
-    /*
-    auto ptrAlloca = ctx.getBuilder()->CreateAlloca(registry.getBytePtrType()->getLlvmType(&ctx));
-    auto intAlloca = ctx.getBuilder()->CreateAlloca(registry.getIntType()->getLlvmType(&ctx));
-    auto ptr = ctx.getBuilder()->CreateLoad(ptrAlloca, "ptr");
-    auto testClass = dynamic_cast<ClassType *>(registry.getType("Test"));
-    auto ptrCasted = testClass->bitcastToClassPtr(&ctx, ptr);
-    auto one = ctx.getBuilder()->getInt32(1);
-    auto nullPtr = llvm::ConstantPointerNull::get(llvm::PointerType::get(testClass->getClassStructType(&ctx), 0));
-    auto size = ctx.getBuilder()->CreateGEP(testClass->getClassStructType(&ctx), nullPtr, std::vector<llvm::Value *>{one});
-    auto sizeInt = ctx.getBuilder()->CreatePtrToInt(size, registry.getIntType()->getLlvmType(&ctx));
-    auto getSize = ctx.getBuilder()->CreateCall(globalScope.getSymbolIdEnvEntry("malloc")->getEntryFunction(), sizeInt);
-     */
-    //auto newOp = NewOp(&ctx, globalScope.getIdEnv(), testClass2);
-    /*
-    auto oneVal = ctx.getBuilder()->getInt1(true);
-    auto testedOp = BooleanNotOp(&ctx, &registry, oneVal);
-     */
-    /*
-    auto oneVal = ctx.getBuilder()->getInt32(1);
-    auto zeroVal = ctx.getBuilder()->getInt32(0);
-    auto testedOp = IntDivOp(&ctx, &registry, oneVal, zeroVal);
-    auto stringOp = ConstStringOp(&ctx, &registry, "eniu");
-    auto intOp = ConstIntOp(&ctx, &registry, -42);
-    auto modOp = IntModOp(&ctx, &registry, oneVal, oneVal);
-    ctx.getBuilder()->CreateRet(newOp.getOpVal());
-     */
-/*
-    llvm::Function *main = ctx.getModule()->getFunction("main");
-    llvm::BasicBlock *BB = &main->getBasicBlockList().back();
-    llvm::Instruction *before = &BB->getInstList().back();
-    ctx.getBuilder()->SetInsertPoint(before);
-    ArrayType *at = registry.getArrayType(registry.getIntType());
-    auto arrPtr = at->allocateArray(&ctx, ctx.getBuilder()->getInt32(42));
-    auto len = at->getLength(&ctx, arrPtr);
-    llvm::Function *printInt = ctx.getModule()->getFunction("printInt");
-
-
-    auto elemPtr = at->getElemPtr(&ctx, arrPtr, ctx.getBuilder()->getInt32(4));
-    ctx.getBuilder()->CreateStore(ctx.getBuilder()->getInt32(43), elemPtr);
-    auto elem = at->getElem(&ctx, arrPtr, ctx.getBuilder()->getInt32(4));
-    ctx.getBuilder()->CreateCall(printInt, len);
-    ctx.getBuilder()->CreateCall(printInt, elem);
-*/
     std::cerr << "OK" << std::endl;
 
     // globalScope.declareFunction("malloc", std::vector<const std::string>{"size"}, registry.getBytePtrType(), std::vector<Type *>{registry.getIntType()});

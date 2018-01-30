@@ -6,8 +6,12 @@
 
 
 llvm::Value *StringAddOp::concatStrings(Context *ctx, llvm::Value *lStr, llvm::Value *rStr) {
-    return ctx->getBuilder()->CreateCall(
+    auto toRet = ctx->getBuilder()->CreateCall(
             ctx->getModule()->getFunction("concatStrings"),
             std::vector<llvm::Value *>{lStr, rStr}
     );
+    llvm::Function *derefString = ctx->getModule()->getFunction("derefString");
+    ctx->getBuilder()->CreateCall(derefString, lStr);
+    ctx->getBuilder()->CreateCall(derefString, rStr);
+    return toRet;
 }
