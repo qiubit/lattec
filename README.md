@@ -17,7 +17,6 @@ under root directory. Its usage is as defined in assignment specification.
 Implemented features:
 - core Latte LLVM compiler (front-end + back-end)
 - optimizations: dead code elimination (code after returns is not generated)
-- LLVM SSA code
 - extensions: arrays, objects with virtual functions and inheritance
 
 2. Directory structure
