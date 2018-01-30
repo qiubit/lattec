@@ -12,9 +12,9 @@ if [ $# -eq 1 ]
                     rm tmpfile
                     exit 1
             else
-                llvm-link -S tmpfile $SCRIPT_DIR/lib/runtime.ll >$INPUT_DIR/${INPUT_FILE%%.*}\.ll
+                /home/students/inf/PUBLIC/MRJP/llvm39/bin/llvm-link -S tmpfile $SCRIPT_DIR/lib/runtime.ll >$INPUT_DIR/${INPUT_FILE%%.*}\.ll
                 rm tmpfile
-                llvm-as $INPUT_DIR/${INPUT_FILE%%.*}\.ll
+                /home/students/inf/PUBLIC/MRJP/llvm39/bin/llvm-as $INPUT_DIR/${INPUT_FILE%%.*}\.ll
             fi
         else
             echo "Usage: $0 <name_of_input_file>"

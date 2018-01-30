@@ -14,7 +14,7 @@ for filename in extensions/objects1/*.bc; do
     OUT=$(basename $filename)
     OUTFILE=${OUT%%.*}\.myout
     echo "RUNNING $filename"
-    lli $filename >$OUTFILE
+    /home/students/inf/PUBLIC/MRJP/llvm39/bin/lli $filename >$OUTFILE
 done
 
 for filename in *.myout; do
