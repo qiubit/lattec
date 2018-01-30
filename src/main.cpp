@@ -19,18 +19,8 @@
 #include "registries/TypeRegistry.h"
 #include "scopes/GlobalScope.h"
 #include "visitors/GlobalScopeVisitor.h"
-#include "operations/NewOp.h"
-#include "operations/IntNegOp.h"
-#include "operations/BooleanNotOp.h"
-#include "operations/TypedNullOp.h"
-#include "operations/IntDivOp.h"
-#include "operations/ConstStringOp.h"
-#include "operations/ConstIntOp.h"
-#include "operations/StringAddOp.h"
-#include "operations/IntModOp.h"
 #include "visitors/FunctionScopeVisitor.h"
 #include "visitors/CodegenVisitor.h"
-#include "types/ArrayType.h"
 
 int main() {
     TypeRegistry registry;
@@ -89,6 +79,12 @@ int main() {
     globalScope.defineFunction("concatStrings");
     globalScope.declareFunction("strcmp", intType, std::vector<Type *>{stringType, stringType});
     globalScope.defineFunction("strcmp");
+    globalScope.declareFunction("getString", stringType, std::vector<Type *>{stringType});
+    globalScope.defineFunction("getString");
+    globalScope.declareFunction("refString", voidType, std::vector<Type *>{stringType});
+    globalScope.defineFunction("refString");
+    globalScope.declareFunction("derefString", voidType, std::vector<Type *>{stringType});
+    globalScope.defineFunction("derefString");
 
     GlobalScopeVisitor globalScopeVisitor(&globalScope);
     globalScopeVisitor.visit(tree);
