@@ -15,7 +15,7 @@ After compilation, latc_llvm executable should be available
 under root directory. Its usage is as defined in assignment specification.
 
 Implemented features:
-- core Latte LLVM compiler (front-end + back-end)
+- core Latte LLVM compiler (front-end + back-end) [+ bugfix from 1st submit]
 - optimizations: dead code elimination (code after returns is not generated)
 - extensions: arrays, objects with virtual functions and inheritance
 - basic garbage collection: strings are initialized with refcount equal to 1,
