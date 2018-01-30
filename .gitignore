@@ -1,2 +1,4 @@
 lib/libantlr4-runtime.a
 .idea
+*.ll
+*.bc
