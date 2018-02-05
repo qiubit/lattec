@@ -380,7 +380,7 @@ antlrcpp::Any FunctionScopeVisitor::visitItem(LatteParser::ItemContext *ctx) {
     if (!isRightCompatibleWithLeft(currentDeclType, t)) {
         reportError(ctx, "Assignment of incompatible types - \"" + currentDeclType->getTypeId() + "\" and \"" + t->getTypeId() + "\"");
     }
-    currentScope->declareVariable(varIdStr, t);
+    currentScope->declareVariable(varIdStr, currentDeclType);
     return nullptr;
 }
 
