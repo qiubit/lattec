@@ -126,7 +126,8 @@ std::vector<std::string> GlobalScope::errorChecks() {
     if (!checkForMain())
         errors.emplace_back("Function int main() not defined");
 
-    checkClassHierarchy(errors);
+    if (noCycle)
+        checkClassHierarchy(errors);
 
     return errors;
 }
