@@ -12,9 +12,14 @@ done
 
 for filename in good/*.bc; do
     OUT=$(basename $filename)
+    INFILE=good/${OUT%%.*}\.input
     OUTFILE=${OUT%%.*}\.myout
     echo "RUNNING $filename"
-    /home/students/inf/PUBLIC/MRJP/llvm39/bin/lli $filename >$OUTFILE
+    STDIN="/dev/null"
+    if test -f "$INFILE"; then
+        STDIN="$INFILE"
+    fi
+    lli $filename <$STDIN >$OUTFILE
 done
 
 for filename in *.myout; do
