@@ -33,6 +33,10 @@ public:
     void bindClassInstanceBytePtr(llvm::Value *classPtr);
     void defineClassMemberVariable(const std::string &symbol);
     void declareVariable(const std::string &symbol, Type *t) override;
+
+    void leaveScope() override;
+
+    void leaveAllScopes() override;
 };
 
 

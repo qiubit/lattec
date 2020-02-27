@@ -130,6 +130,7 @@ antlrcpp::Any CodegenVisitor::visitBlockStmt(LatteParser::BlockStmtContext *ctx)
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()])
         visitChildren(ctx);
 
+    currentScope->leaveScope();
     currentScope = oldScope;
     return nullptr;
 }
@@ -146,6 +147,11 @@ antlrcpp::Any CodegenVisitor::visitAss(LatteParser::AssContext *ctx) {
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         visit(ctx->expr());
         auto varLoc = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText())->getEntryAlloca();
+        if (exprTypes[ctx->expr()]->getTypeId() == "string") {
+            llvm::Function *derefString = codegenCtx->getModule()->getFunction("derefString");
+            auto str = codegenCtx->getBuilder()->CreateLoad(varLoc);
+            codegenCtx->getBuilder()->CreateCall(derefString, str);
+        }
         codegenCtx->getBuilder()->CreateStore(exprValues[ctx->expr()], varLoc);
     }
     return nullptr;
@@ -156,8 +162,14 @@ antlrcpp::Any CodegenVisitor::visitClassAss(LatteParser::ClassAssContext *ctx) {
         visit(ctx->expr()[0]);
         visit(ctx->expr()[1]);
         ClassType *classType = dynamic_cast<ClassType *>(exprTypes[ctx->expr()[0]]);
+        assert(classType != nullptr);
         llvm::Value *classBytePtr = exprValues[ctx->expr()[0]];
         llvm::Value *classMemberPtr = classType->getMemberVariablePtr(codegenCtx, ctx->ID()->getText(), classBytePtr);
+        if (exprTypes[ctx->expr()[1]] == reg->getStringType()) {
+            llvm::Function *derefString = codegenCtx->getModule()->getFunction("derefString");
+            llvm::Value *strToDeref = codegenCtx->getBuilder()->CreateLoad(classMemberPtr);
+            codegenCtx->getBuilder()->CreateCall(derefString, strToDeref);
+        }
         codegenCtx->getBuilder()->CreateStore(exprValues[ctx->expr()[1]], classMemberPtr);
     }
     return nullptr;
@@ -186,6 +198,7 @@ antlrcpp::Any CodegenVisitor::visitDecr(LatteParser::DecrContext *ctx) {
 antlrcpp::Any CodegenVisitor::visitRet(LatteParser::RetContext *ctx) {
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         visit(ctx->expr());
+        currentScope->leaveAllScopes();
         codegenCtx->getBuilder()->CreateRet(exprValues[ctx->expr()]);
         blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()] = true;
     }
@@ -194,6 +207,7 @@ antlrcpp::Any CodegenVisitor::visitRet(LatteParser::RetContext *ctx) {
 
 antlrcpp::Any CodegenVisitor::visitVRet(LatteParser::VRetContext *ctx) {
     if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
+        currentScope->leaveAllScopes();
         codegenCtx->getBuilder()->CreateRetVoid();
         blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()] = true;
     }
@@ -327,8 +341,14 @@ antlrcpp::Any CodegenVisitor::visitWhile(LatteParser::WhileContext *ctx) {
 }
 
 antlrcpp::Any CodegenVisitor::visitSExp(LatteParser::SExpContext *ctx) {
-    if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()])
+    if (!blockTerminated[codegenCtx->getBuilder()->GetInsertBlock()]) {
         visit(ctx->expr());
+        if (exprTypes[ctx->expr()] == reg->getStringType()) {
+            llvm::Value *stringToDeref = exprValues[ctx->expr()];
+            llvm::Function *derefString = codegenCtx->getModule()->getFunction("derefString");
+            codegenCtx->getBuilder()->CreateCall(derefString, stringToDeref);
+        }
+    }
     return nullptr;
 }
 
@@ -363,6 +383,10 @@ antlrcpp::Any CodegenVisitor::visitEId(LatteParser::EIdContext *ctx) {
     exprValues[ctx] = codegenCtx->getBuilder()->CreateLoad(
             currentScope->getSymbolIdEnvEntry(ctx->ID()->getText())->getEntryAlloca()
     );
+    if (exprTypes[ctx] == reg->getStringType()) {
+        llvm::Function *refString = codegenCtx->getModule()->getFunction("refString");
+        codegenCtx->getBuilder()->CreateCall(refString, exprValues[ctx]);
+    }
     return nullptr;
 }
 
@@ -374,6 +398,14 @@ antlrcpp::Any CodegenVisitor::visitEFunCall(LatteParser::EFunCallContext *ctx) {
     }
     auto fn = currentScope->getSymbolIdEnvEntry(ctx->ID()->getText())->getEntryFunction();
     exprValues[ctx] = codegenCtx->getBuilder()->CreateCall(fn, fnArgs);
+
+    llvm::Function *derefString = codegenCtx->getModule()->getFunction("derefString");
+    for (size_t i = 0; i < ctx->expr().size(); i++) {
+        if (exprTypes[ctx->expr()[i]] == reg->getStringType()) {
+            codegenCtx->getBuilder()->CreateCall(derefString, exprValues[ctx->expr()[i]]);
+        }
+    }
+
     return nullptr;
 }
 
@@ -436,6 +468,10 @@ antlrcpp::Any CodegenVisitor::visitEClassField(LatteParser::EClassFieldContext *
     }
     ClassType *exprType = dynamic_cast<ClassType *>(exprTypes[ctx->expr()]);
     exprValues[ctx] = ClassVarOp(codegenCtx, exprType, exprValues[ctx->expr()], ctx->ID()->getText()).getOpVal();
+    if (exprTypes[ctx] == reg->getStringType()) {
+        llvm::Function *refString = codegenCtx->getModule()->getFunction("refString");
+        codegenCtx->getBuilder()->CreateCall(refString, exprValues[ctx]);
+    }
     return nullptr;
 }
 
@@ -622,6 +658,13 @@ antlrcpp::Any CodegenVisitor::visitEClassFun(LatteParser::EClassFunContext *ctx)
     auto fn = codegenCtx->getBuilder()->CreateLoad(fnPtr);
     exprValues[ctx] = codegenCtx->getBuilder()->CreateCall(fn, fnArgs);
 
+    llvm::Function *derefString = codegenCtx->getModule()->getFunction("derefString");
+    for (size_t i = 1; i < ctx->expr().size(); i++) {
+        if (exprTypes[ctx->expr()[i]] == reg->getStringType()) {
+            codegenCtx->getBuilder()->CreateCall(derefString, exprValues[ctx->expr()[i]]);
+        }
+    }
+
     return LatteBaseVisitor::visitEClassFun(ctx);
 }
 
@@ -701,6 +744,7 @@ antlrcpp::Any CodegenVisitor::visitForArr(LatteParser::ForArrContext *ctx) {
             blockTerminated[stmtBB] = true;
         }
 
+        currentScope->leaveScope();
         currentScope = oldScope;
         codegenCtx->getBuilder()->SetInsertPoint(afterForBB);
     }
@@ -719,5 +763,9 @@ antlrcpp::Any CodegenVisitor::visitEArrIdx(LatteParser::EArrIdxContext *ctx) {
     visit(ctx->expr()[0]);
     ArrayType *arrayType = dynamic_cast<ArrayType *>(exprTypes[ctx->expr()[0]]);
     exprValues[ctx] = arrayType->getElem(codegenCtx, exprValues[ctx->expr()[0]], exprValues[ctx->expr()[1]]);
+    if (exprTypes[ctx] == reg->getStringType()) {
+        llvm::Function *refString = codegenCtx->getModule()->getFunction("refString");
+        codegenCtx->getBuilder()->CreateCall(refString, exprValues[ctx]);
+    }
     return nullptr;
 }

@@ -33,9 +33,15 @@ llvm::Value *Context::getStringGlobal(const std::string &str) {
                 new llvm::GlobalVariable(*this->llvmModule, strGlobalType, true, llvm::GlobalValue::InternalLinkage, llvmStr);
         this->stringGlobals[str] = strGlobal;
     }
-    return this->llvmBuilder->CreateGEP(
+    auto globalStrPtr = this->llvmBuilder->CreateGEP(
             strGlobalType,
             stringGlobals[str],
             std::vector<llvm::Value *>{llvmBuilder->getInt32(0), llvmBuilder->getInt32(0)}
     );
+    if (str == "") {
+        return globalStrPtr;
+    } else {
+        llvm::Function *stringGetter = getModule()->getFunction("getString");
+        return getBuilder()->CreateCall(stringGetter, globalStrPtr);
+    }
 }

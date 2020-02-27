@@ -12,6 +12,8 @@ class Scope {
 public:
     virtual IdEnvEntry *getSymbolIdEnvEntry(const std::string &symbol) = 0;
     virtual void declareVariable(const std::string &symbol, Type *t) = 0;
+    virtual void leaveScope() = 0;
+    virtual void leaveAllScopes() = 0;
 };
 
 

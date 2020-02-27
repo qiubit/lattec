@@ -179,6 +179,8 @@ void ClassType::overwriteVirtualFunctionsAndMembers(Context *ctx, IdEnv *functio
                     ctx->getBuilder()->CreateStore(ctx->getBuilder()->getInt32(0), memberPtr);
                 } else if (memberType->getTypeId() == "boolean") {
                     ctx->getBuilder()->CreateStore(ctx->getBuilder()->getInt1(false), memberPtr);
+                } else if (memberType->getTypeId() == "string") {
+                    ctx->getBuilder()->CreateStore(ctx->getStringGlobal(""), memberPtr);
                 } else {
                     ctx->getBuilder()->CreateStore(llvm::ConstantPointerNull::get(ctx->getBuilder()->getInt8PtrTy(0)), memberPtr);
                 }

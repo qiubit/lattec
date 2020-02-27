@@ -67,3 +67,14 @@ void FunctionScope::setParent(ClassScope *classScope) {
 void FunctionScope::declareVariable(const std::string &symbol, Type *t) {
     assert(false && "declareVariable unimplemented");
 }
+
+void FunctionScope::leaveScope() {
+    // It is caller responsibility to do garbage collection
+    return;
+}
+
+void FunctionScope::leaveAllScopes() {
+    leaveScope();
+    if (parent != nullptr)
+        parent->leaveAllScopes();
+}
